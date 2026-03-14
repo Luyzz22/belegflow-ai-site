@@ -31,8 +31,8 @@ export default function HomePage() {
             <span className="text-[22px]" style={{ fontFamily: "'Instrument Serif', serif" }}>BelegFlow AI</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {["Features", "Ablauf", "Preise"].map(s => (
-              <a key={s} href={"#" + s.toLowerCase()} className="text-sm text-[#a3a3a3] hover:text-white transition">{s}</a>
+            {["Features", "Ablauf", "Preise", "Guide"].map(s => (
+              <a key={s} href={s === "Guide" ? "/guide" : "#" + s.toLowerCase()} className="text-sm text-[#a3a3a3] hover:text-white transition">{s}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
