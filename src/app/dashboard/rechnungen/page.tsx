@@ -166,8 +166,8 @@ export default function RechnungenPage() {
                         DATEV
                       </button>
                     )}
-                    <a href={`https://app.sbsdeutschland.com/api/erechnung/invoices/${inv.document_id}`}
-                      target="_blank" rel="noopener"
+                    <a href={`/dashboard/rechnungen/${inv.document_id}`}
+                      
                       className="text-xs px-3 py-1.5 bg-[#262626] text-[#a3a3a3] rounded-lg hover:text-white transition">
                       Details
                     </a>
