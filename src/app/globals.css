@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bf-accent: #e85d04;
+  --color-bf-accent-light: #f48c06;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,6 +1,23 @@
 {
-  "name": "belegflow-ai-site",
+  "name": "belegflow-ai",
   "version": "1.0.0",
-  "description": "BelegFlow AI — Intelligente E-Rechnung für den deutschen Mittelstand",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.2",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3"
+  }
 }
