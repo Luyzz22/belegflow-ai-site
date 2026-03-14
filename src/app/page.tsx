@@ -171,8 +171,8 @@ export default function HomePage() {
           <p className="text-[13px] text-[#525252]">© 2026 BelegFlow AI — Ein Produkt von SBS Deutschland GmbH & Co. KG</p>
           <div className="flex gap-6">
             <a href="mailto:ki@sbsdeutschland.de" className="text-[13px] text-[#525252] hover:text-[#a3a3a3]">Kontakt</a>
-            <a href="#" className="text-[13px] text-[#525252] hover:text-[#a3a3a3]">Impressum</a>
-            <a href="#" className="text-[13px] text-[#525252] hover:text-[#a3a3a3]">Datenschutz</a>
+            <a href="/impressum" className="text-[13px] text-[#525252] hover:text-[#a3a3a3]">Impressum</a>
+            <a href="/datenschutz" className="text-[13px] text-[#525252] hover:text-[#a3a3a3]">Datenschutz</a>
           </div>
         </div>
       </footer>
