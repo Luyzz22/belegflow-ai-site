@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     <a key={i} href={`/dashboard/rechnungen/${inv.document_id}`}
                       className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 transition">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#003856]/8 flex items-center justify-center text-sm">📄</div>
+                        <div className="w-9 h-9 rounded-lg bg-[#00385610] flex items-center justify-center text-sm">📄</div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">{inv.supplier || inv.file_name}</p>
                           <p className="text-[11px] text-gray-400">{inv.invoice_number || inv.file_name}</p>
