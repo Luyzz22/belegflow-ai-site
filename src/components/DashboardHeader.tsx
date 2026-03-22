@@ -87,7 +87,7 @@ export default function DashboardHeader() {
           {NAV_ITEMS.map((item) => {
             const isActive = currentPath === item.href || (item.href !== "/dashboard" && currentPath.startsWith(item.href));
             return (
-              
+              <a
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
