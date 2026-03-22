@@ -10,6 +10,8 @@ const NAV_ITEMS = [
   { href: "/dashboard/spend", label: "Spend", icon: "💰" },
   { href: "/dashboard/budget", label: "Budget", icon: "📋" },
   { href: "/dashboard/copilot", label: "Copilot", icon: "🤖" },
+  { href: "/dashboard/audit", label: "Audit", icon: "📋" },
+  { href: "/dashboard/exporte", label: "Exporte", icon: "📦" },
 ];
 
 export default function DashboardHeader() {

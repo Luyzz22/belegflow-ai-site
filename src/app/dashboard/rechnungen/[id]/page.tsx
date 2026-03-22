@@ -55,7 +55,7 @@ export default function InvoiceDetailPage() {
   if (!user) return null;
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900 flex items-center justify-center">
       <div className="flex gap-1.5">
         <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{animationDelay:"0ms"}}/>
         <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{animationDelay:"150ms"}}/>
@@ -65,15 +65,15 @@ export default function InvoiceDetailPage() {
   );
 
   if (!invoice) return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900 flex items-center justify-center">
       <div className="text-center">
-        <p className="text-[#737373] mb-4">Rechnung nicht gefunden</p>
+        <p className="text-gray-500 mb-4">Rechnung nicht gefunden</p>
         <a href="/dashboard/rechnungen" className="text-[#e85d04]">← Zurück</a>
       </div>
     </div>
   );
 
-  const s = STATUS[invoice.current_state] || {label:invoice.current_state,color:"bg-[#262626] text-[#737373] border-[#404040]"};
+  const s = STATUS[invoice.current_state] || {label:invoice.current_state,color:"bg-[#262626] text-gray-500 border-[#404040]"};
   const NEXT: Record<string,string[]> = {
     uploaded:["classified"],classified:["validated","rejected"],validated:["suggested"],
     suggested:["approved","rejected"],approved:["exported"],exported:["archived"],
@@ -81,11 +81,11 @@ export default function InvoiceDetailPage() {
   const nextStates = NEXT[invoice.current_state] || [];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-10">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
+      <div className="border-b border-white/[0.06] bg-[#f4f7fa]/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/dashboard/rechnungen" className="text-[#737373] hover:text-white transition">← Rechnungen</a>
+            <a href="/dashboard/rechnungen" className="text-gray-500 hover:text-gray-900 transition">← Rechnungen</a>
             <div className="h-6 w-px bg-[#262626]"/>
             <h1 className="text-lg font-semibold truncate max-w-[300px]">{invoice.file_name || id}</h1>
           </div>
@@ -102,8 +102,8 @@ export default function InvoiceDetailPage() {
 
         {/* Invoice Data */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Rechnungsdaten</h2>
+          <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Rechnungsdaten</h2>
             {[
               {l:"Dokument-ID",v:invoice.document_id},
               {l:"Datei",v:invoice.file_name||"—"},
@@ -112,8 +112,8 @@ export default function InvoiceDetailPage() {
               {l:"Status",v:s.label},
               {l:"Erstellt",v:new Date(invoice.created_at).toLocaleString("de-DE")},
             ].map((r,i)=>(
-              <div key={i} className="flex justify-between py-2 border-b border-[#262626] last:border-0">
-                <span className="text-sm text-[#737373]">{r.l}</span>
+              <div key={i} className="flex justify-between py-2 border-b border-gray-200 last:border-0">
+                <span className="text-sm text-gray-500">{r.l}</span>
                 <span className="text-sm font-medium text-right max-w-[60%] truncate">{r.v}</span>
               </div>
             ))}
@@ -122,12 +122,12 @@ export default function InvoiceDetailPage() {
           {/* Actions */}
           <div className="space-y-4">
             {nextStates.length>0 && (
-              <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-                <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Aktionen</h2>
+              <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Aktionen</h2>
                 <div className="flex flex-wrap gap-2">
                   {nextStates.map(ns=>(
                     <button key={ns} onClick={()=>transition(ns)}
-                      className={"px-4 py-2 rounded-xl text-sm font-medium transition "+(ns==="rejected"?"bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20":"bg-[#e85d04] hover:bg-[#f48c06] text-white")}>
+                      className={"px-4 py-2 rounded-xl text-sm font-medium transition "+(ns==="rejected"?"bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20":"bg-[#e85d04] hover:bg-[#f48c06] text-gray-900")}>
                       → {STATUS[ns]?.label||ns}
                     </button>
                   ))}
@@ -142,8 +142,8 @@ export default function InvoiceDetailPage() {
 
             {/* KI Kontierung */}
             {kontierung && (
-              <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-                <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">🤖 KI-Kontierung</h2>
+              <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">🤖 KI-Kontierung</h2>
                 {[
                   {l:"Sachkonto",v:kontierung.konto||"—"},
                   {l:"Gegenkonto",v:kontierung.gegenkonto||"—"},
@@ -151,8 +151,8 @@ export default function InvoiceDetailPage() {
                   {l:"Konfidenz",v:kontierung.confidence?Math.round(kontierung.confidence*100)+"%":"—"},
                   {l:"Modell",v:kontierung.model||"—"},
                 ].map((r,i)=>(
-                  <div key={i} className="flex justify-between py-1.5 border-b border-[#262626] last:border-0">
-                    <span className="text-xs text-[#737373]">{r.l}</span>
+                  <div key={i} className="flex justify-between py-1.5 border-b border-gray-200 last:border-0">
+                    <span className="text-xs text-gray-500">{r.l}</span>
                     <span className="text-xs font-medium">{r.v}</span>
                   </div>
                 ))}
@@ -162,10 +162,10 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Events Timeline */}
-        <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Verlauf ({events.length} Events)</h2>
+        <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Verlauf ({events.length} Events)</h2>
           {events.length === 0 ? (
-            <p className="text-sm text-[#525252]">Keine Events vorhanden</p>
+            <p className="text-sm text-gray-400">Keine Events vorhanden</p>
           ) : (
             <div className="space-y-3">
               {events.slice().reverse().map((ev,i)=>(
@@ -173,14 +173,14 @@ export default function InvoiceDetailPage() {
                   <div className="w-2 h-2 rounded-full bg-[#e85d04] mt-2 shrink-0"/>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {ev.from_state && <span className="text-xs px-2 py-0.5 rounded bg-[#262626] text-[#737373]">{ev.from_state}</span>}
-                      {ev.from_state && ev.to_state && <span className="text-xs text-[#525252]">→</span>}
-                      {ev.to_state && <span className="text-xs px-2 py-0.5 rounded bg-[#262626] text-[#a3a3a3]">{ev.to_state}</span>}
+                      {ev.from_state && <span className="text-xs px-2 py-0.5 rounded bg-[#262626] text-gray-500">{ev.from_state}</span>}
+                      {ev.from_state && ev.to_state && <span className="text-xs text-gray-400">→</span>}
+                      {ev.to_state && <span className="text-xs px-2 py-0.5 rounded bg-[#262626] text-gray-600">{ev.to_state}</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-[#525252]">{ev.actor||"System"}</span>
+                      <span className="text-xs text-gray-400">{ev.actor||"System"}</span>
                       <span className="text-xs text-[#404040]">·</span>
-                      <span className="text-xs text-[#525252]">{ev.timestamp?new Date(ev.timestamp).toLocaleString("de-DE"):""}</span>
+                      <span className="text-xs text-gray-400">{ev.timestamp?new Date(ev.timestamp).toLocaleString("de-DE"):""}</span>
                     </div>
                   </div>
                 </div>

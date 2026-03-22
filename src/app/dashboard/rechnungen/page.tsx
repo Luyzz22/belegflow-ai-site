@@ -80,15 +80,15 @@ export default function RechnungenPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-10">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
+      <div className="border-b border-white/[0.06] bg-[#f4f7fa]/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/dashboard" className="text-[#737373] hover:text-white transition">← Dashboard</a>
+            <a href="/dashboard" className="text-gray-500 hover:text-gray-900 transition">← Dashboard</a>
             <div className="h-6 w-px bg-[#262626]"/>
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#e85d04] to-[#f48c06] flex items-center justify-center text-lg">📄</div>
-              <div><h1 className="text-lg font-semibold">Rechnungen</h1><p className="text-xs text-[#737373]">{filtered.length} von {invoices.length} Belegen</p></div>
+              <div><h1 className="text-lg font-semibold">Rechnungen</h1><p className="text-xs text-gray-500">{filtered.length} von {invoices.length} Belegen</p></div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export default function RechnungenPage() {
                 📤 DATEV ({exportable.length})
               </button>
             )}
-            {selected.size>0 && <span className="text-xs text-[#737373]">{selected.size} ausgewählt</span>}
+            {selected.size>0 && <span className="text-xs text-gray-500">{selected.size} ausgewählt</span>}
             <label className={"inline-flex items-center gap-2 px-5 py-2.5 bg-[#e85d04] hover:bg-[#f48c06] rounded-xl text-sm font-medium cursor-pointer transition "+(uploading?"opacity-50 pointer-events-none":"")}>
               <span>{uploading?"Hochladen...":"⬆️ Hochladen"}</span>
               <input type="file" accept=".pdf,.xml,.png,.jpg,.jpeg" className="hidden" onChange={e=>{const f=e.target.files?.[0]; if(f) upload(f); e.target.value="";}}/>
@@ -111,12 +111,12 @@ export default function RechnungenPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1 relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#525252]">🔍</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Suche nach Datei, Lieferant oder ID..."
-              className="w-full bg-[#171717]/50 border border-[#262626] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#525252] focus:outline-none focus:border-[#e85d04] transition"/>
+              className="w-full bg-white/50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-[#525252] focus:outline-none focus:border-[#e85d04] transition"/>
           </div>
           <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            className="bg-[#171717]/50 border border-[#262626] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#e85d04]">
+            className="bg-white/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#e85d04]">
             <option value="all">Alle Status</option>
             {Object.entries(STATUS).map(([k,v])=>(<option key={k} value={k}>{v.label}</option>))}
           </select>
@@ -130,29 +130,29 @@ export default function RechnungenPage() {
           <div className="text-center py-20">
             <div className="text-5xl mb-4">{search||filterStatus!=="all"?"🔍":"📄"}</div>
             <h2 className="text-xl font-semibold mb-2">{search||filterStatus!=="all"?"Keine Treffer":"Keine Rechnungen"}</h2>
-            <p className="text-[#737373] text-sm mb-6">{search||filterStatus!=="all"?"Versuchen Sie andere Filter.":"Laden Sie Ihre erste Rechnung hoch."}</p>
+            <p className="text-gray-500 text-sm mb-6">{search||filterStatus!=="all"?"Versuchen Sie andere Filter.":"Laden Sie Ihre erste Rechnung hoch."}</p>
             {!search&&filterStatus==="all"&&<label className="inline-flex items-center gap-2 px-6 py-3 bg-[#e85d04] rounded-xl text-sm font-medium cursor-pointer"><span>Erste Rechnung hochladen</span><input type="file" accept=".pdf,.xml,.png,.jpg,.jpeg" className="hidden" onChange={e=>{const f=e.target.files?.[0]; if(f) upload(f); e.target.value="";}}/></label>}
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="hidden sm:grid grid-cols-12 gap-4 px-4 py-2 text-xs text-[#525252] uppercase tracking-wider font-medium">
+            <div className="hidden sm:grid grid-cols-12 gap-4 px-4 py-2 text-xs text-gray-400 uppercase tracking-wider font-medium">
               <div className="col-span-1"><button onClick={toggleAll} className="w-4 h-4 rounded border border-[#404040] flex items-center justify-center text-[10px] hover:border-[#e85d04] transition">{selected.size===filtered.length&&filtered.length>0?"✓":""}</button></div>
               <div className="col-span-3">Datei</div><div className="col-span-2">Status</div><div className="col-span-2">Lieferant</div><div className="col-span-2 text-right">Betrag</div><div className="col-span-2 text-right">Aktionen</div>
             </div>
             {filtered.map((inv,i)=>{
-              const s=STATUS[inv.current_state]||{label:inv.current_state,color:"bg-[#262626] text-[#737373]"};
+              const s=STATUS[inv.current_state]||{label:inv.current_state,color:"bg-[#262626] text-gray-500"};
               const sel = selected.has(inv.document_id);
               return (
-                <div key={i} className={"bg-[#171717]/50 border rounded-xl px-4 py-3 transition grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-center "+(sel?"border-[#e85d04]/30 bg-[#e85d04]/5":"border-[#262626] hover:border-[#404040]")}>
+                <div key={i} className={"bg-white/50 border rounded-xl px-4 py-3 transition grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-center "+(sel?"border-[#e85d04]/30 bg-[#e85d04]/5":"border-gray-200 hover:border-[#404040]")}>
                   <div className="col-span-1">
-                    <button onClick={()=>toggleSelect(inv.document_id)} className={"w-4 h-4 rounded border flex items-center justify-center text-[10px] transition "+(sel?"border-[#e85d04] bg-[#e85d04] text-white":"border-[#404040] hover:border-[#e85d04]")}>{sel?"✓":""}</button>
+                    <button onClick={()=>toggleSelect(inv.document_id)} className={"w-4 h-4 rounded border flex items-center justify-center text-[10px] transition "+(sel?"border-[#e85d04] bg-[#e85d04] text-gray-900":"border-[#404040] hover:border-[#e85d04]")}>{sel?"✓":""}</button>
                   </div>
                   <a href={`/dashboard/rechnungen/${inv.document_id}`} className="col-span-3">
-                    <p className="text-sm font-medium text-white truncate">{inv.file_name||inv.document_id}</p>
-                    <p className="text-xs text-[#525252] mt-0.5">{new Date(inv.created_at).toLocaleDateString("de-DE")} · {inv.document_id.slice(0,8)}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{inv.file_name||inv.document_id}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{new Date(inv.created_at).toLocaleDateString("de-DE")} · {inv.document_id.slice(0,8)}</p>
                   </a>
                   <div className="col-span-2"><span className={"text-xs px-2.5 py-1 rounded-full font-medium "+s.color}>{s.label}</span></div>
-                  <div className="col-span-2"><span className="text-sm text-[#a3a3a3]">{inv.supplier||"—"}</span></div>
+                  <div className="col-span-2"><span className="text-sm text-gray-600">{inv.supplier||"—"}</span></div>
                   <div className="col-span-2 text-right"><span className="text-sm font-medium">{inv.total_amount?new Intl.NumberFormat("de-DE",{style:"currency",currency:inv.currency||"EUR"}).format(inv.total_amount):"—"}</span></div>
                   <div className="col-span-2 text-right"><a href={`/dashboard/rechnungen/${inv.document_id}`} className="text-xs text-[#e85d04]">Details →</a></div>
                 </div>

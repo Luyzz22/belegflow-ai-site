@@ -42,18 +42,18 @@ export default function SettingsPage() {
   const RL:Record<string,string> = {admin:"Admin",editor:"Editor",viewer:"Viewer"};
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-10">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
+      <div className="border-b border-white/[0.06] bg-[#f4f7fa]/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
-          <a href="/dashboard" className="text-[#737373] hover:text-white transition">&larr; Dashboard</a>
+          <a href="/dashboard" className="text-gray-500 hover:text-gray-900 transition">&larr; Dashboard</a>
           <div className="h-6 w-px bg-[#262626]"/>
           <h1 className="text-lg font-semibold">Einstellungen</h1>
         </div>
       </div>
       <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="flex gap-1 mb-8 bg-[#171717]/50 border border-[#262626] rounded-xl p-1">
+        <div className="flex gap-1 mb-8 bg-white/50 border border-gray-200 rounded-xl p-1">
           {(["profile","billing","team"] as const).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} className={"flex-1 py-2.5 rounded-lg text-sm font-medium transition "+(tab===t?"bg-[#262626] text-white":"text-[#737373] hover:text-white")}>
+            <button key={t} onClick={()=>setTab(t)} className={"flex-1 py-2.5 rounded-lg text-sm font-medium transition "+(tab===t?"bg-[#262626] text-gray-900":"text-gray-500 hover:text-gray-900")}>
               {t==="profile"?"Profil":t==="billing"?"Abonnement":"Team"}
             </button>
           ))}
@@ -61,11 +61,11 @@ export default function SettingsPage() {
 
         {tab==="profile"&&(
           <div className="space-y-6">
-            <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-              <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Profil</h2>
+            <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">Profil</h2>
               {[{l:"Name",v:user.name},{l:"E-Mail",v:user.email},{l:"Firma",v:user.company||"—"},{l:"Rolle",v:RL[user.role]||user.role},{l:"Tenant",v:user.tenant_id}].map((r,i)=>(
-                <div key={i} className="flex justify-between py-2 border-b border-[#262626] last:border-0">
-                  <span className="text-sm text-[#737373]">{r.l}</span><span className="text-sm font-medium">{r.v}</span>
+                <div key={i} className="flex justify-between py-2 border-b border-gray-200 last:border-0">
+                  <span className="text-sm text-gray-500">{r.l}</span><span className="text-sm font-medium">{r.v}</span>
                 </div>
               ))}
             </div>
@@ -75,15 +75,15 @@ export default function SettingsPage() {
 
         {tab==="billing"&&sub&&(
           <div className="space-y-6">
-            <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
+            <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
               <div className="flex justify-between mb-4">
-                <h2 className="text-sm font-semibold text-[#d4d4d4]">Aktueller Plan</h2>
+                <h2 className="text-sm font-semibold text-gray-700">Aktueller Plan</h2>
                 <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">{sub.status==="active"?"Aktiv":sub.status}</span>
               </div>
               <p className="text-3xl font-bold mb-4">{PN[sub.plan]||sub.plan}</p>
               {usage&&(
                 <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-2"><span className="text-[#737373]">Rechnungen</span><span>{usage.used}/{usage.limit==="unlimited"?"∞":usage.limit}</span></div>
+                  <div className="flex justify-between text-sm mb-2"><span className="text-gray-500">Rechnungen</span><span>{usage.used}/{usage.limit==="unlimited"?"∞":usage.limit}</span></div>
                   {usage.limit!=="unlimited"&&<div className="w-full bg-[#262626] rounded-full h-2"><div className="bg-[#e85d04] h-2 rounded-full" style={{width:Math.min(100,(usage.used/usage.limit)*100)+"%"}}/></div>}
                 </div>
               )}
@@ -91,7 +91,7 @@ export default function SettingsPage() {
             {sub.plan==="starter"&&(
               <div className="bg-gradient-to-r from-[#e85d04]/10 to-[#171717] border border-[#e85d04]/20 rounded-xl p-6">
                 <h3 className="font-semibold mb-2">Upgrade auf Professional</h3>
-                <p className="text-sm text-[#737373] mb-4">500 Rechnungen/Monat, Gemini + Claude, Finance Copilot</p>
+                <p className="text-sm text-gray-500 mb-4">500 Rechnungen/Monat, Gemini + Claude, Finance Copilot</p>
                 <a href="mailto:ki@sbsdeutschland.de" className="inline-flex px-6 py-2.5 bg-[#e85d04] rounded-xl text-sm font-medium hover:bg-[#f48c06] transition">Upgrade anfragen</a>
               </div>
             )}
@@ -100,26 +100,26 @@ export default function SettingsPage() {
 
         {tab==="team"&&(
           <div className="space-y-6">
-            <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-              <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Team</h2>
+            <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">Team</h2>
               {team.map((u,i)=>(
-                <div key={i} className="flex items-center justify-between py-3 border-b border-[#262626] last:border-0">
-                  <div><p className="text-sm font-medium">{u.name}</p><p className="text-xs text-[#525252]">{u.email}</p></div>
+                <div key={i} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+                  <div><p className="text-sm font-medium">{u.name}</p><p className="text-xs text-gray-400">{u.email}</p></div>
                   <div className="flex items-center gap-3">
-                    <span className={"text-xs px-2 py-1 rounded-full "+(u.role==="admin"?"bg-[#e85d04]/10 text-[#f48c06]":"bg-[#262626] text-[#737373]")}>{RL[u.role]||u.role}</span>
+                    <span className={"text-xs px-2 py-1 rounded-full "+(u.role==="admin"?"bg-[#e85d04]/10 text-[#f48c06]":"bg-[#262626] text-gray-500")}>{RL[u.role]||u.role}</span>
                     {user.role==="admin"&&u.email!==user.email&&<button onClick={()=>rm(u.id)} className="text-xs text-red-400">Entfernen</button>}
                   </div>
                 </div>
               ))}
             </div>
             {user.role==="admin"&&(
-              <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-                <h2 className="text-sm font-semibold text-[#d4d4d4] mb-4">Einladen</h2>
+              <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Einladen</h2>
                 {msg&&<div className={"rounded-xl px-4 py-3 text-sm mb-4 "+(msg.startsWith("Fehler")?"bg-red-500/10 text-red-400":"bg-emerald-500/10 text-emerald-400")}>{msg}</div>}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                  <input value={inv.name} onChange={e=>setInv({...inv,name:e.target.value})} placeholder="Name" className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#525252] focus:outline-none focus:border-[#e85d04]"/>
-                  <input value={inv.email} onChange={e=>setInv({...inv,email:e.target.value})} placeholder="E-Mail" type="email" className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#525252] focus:outline-none focus:border-[#e85d04]"/>
-                  <select value={inv.role} onChange={e=>setInv({...inv,role:e.target.value})} className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#e85d04]">
+                  <input value={inv.name} onChange={e=>setInv({...inv,name:e.target.value})} placeholder="Name" className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-[#525252] focus:outline-none focus:border-[#e85d04]"/>
+                  <input value={inv.email} onChange={e=>setInv({...inv,email:e.target.value})} placeholder="E-Mail" type="email" className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-[#525252] focus:outline-none focus:border-[#e85d04]"/>
+                  <select value={inv.role} onChange={e=>setInv({...inv,role:e.target.value})} className="bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#e85d04]">
                     <option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option>
                   </select>
                 </div>

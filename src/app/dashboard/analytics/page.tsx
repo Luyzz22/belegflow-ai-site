@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
   const fmtW = (w: string) => { const d = new Date(w); return d.getDate() + "." + (d.getMonth() + 1); };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900 flex items-center justify-center">
       <div className="flex gap-1.5">
         <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{animationDelay:"0ms"}} />
         <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{animationDelay:"150ms"}} />
@@ -35,7 +35,7 @@ export default function AnalyticsPage() {
   );
 
   if (!data) return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900 flex items-center justify-center">
       <button onClick={load} className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm">Erneut laden</button>
     </div>
   );
@@ -48,21 +48,21 @@ export default function AnalyticsPage() {
   ].filter((d: any) => d.value > 0);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-10">
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
+      <div className="border-b border-white/[0.06] bg-[#f4f7fa]/80 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/dashboard" className="text-[#737373] hover:text-white transition">&larr; Dashboard</a>
+            <a href="/dashboard" className="text-gray-500 hover:text-gray-900 transition">&larr; Dashboard</a>
             <div className="h-6 w-px bg-[#262626]" />
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-lg">📊</div>
-              <div><h1 className="text-lg font-semibold">Analytics</h1><p className="text-xs text-[#737373]">Rechnungseingang</p></div>
+              <div><h1 className="text-lg font-semibold">Analytics</h1><p className="text-xs text-gray-500">Rechnungseingang</p></div>
             </div>
           </div>
           <div className="flex gap-2">
             {[30, 90, 180].map(d => (
               <button key={d} onClick={() => setPeriod(d)}
-                className={"px-3 py-1.5 rounded-lg text-xs font-medium transition " + (period === d ? "bg-[#e85d04] text-white" : "bg-[#171717] text-[#737373] border border-[#262626]")}>
+                className={"px-3 py-1.5 rounded-lg text-xs font-medium transition " + (period === d ? "bg-[#e85d04] text-gray-900" : "bg-white text-gray-500 border border-gray-200")}>
                 {d}T
               </button>
             ))}
@@ -81,17 +81,17 @@ export default function AnalyticsPage() {
             { l: "Quote", v: k.completion_rate + "%", i: "📈" },
             { l: "Speed", v: ps.formatted, i: "⚡" },
           ].map((x, i) => (
-            <div key={i} className={"rounded-xl p-4 border " + (x.a ? "bg-amber-500/5 border-amber-500/20" : "bg-[#171717]/50 border-[#262626]")}>
+            <div key={i} className={"rounded-xl p-4 border " + (x.a ? "bg-amber-500/5 border-amber-500/20" : "bg-white/50 border-gray-200")}>
               <span className="text-lg">{x.i}</span>
               <div className="text-2xl font-bold mt-1">{x.v}</div>
-              <div className="text-xs text-[#737373] mt-1">{x.l}</div>
+              <div className="text-xs text-gray-500 mt-1">{x.l}</div>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-[#d4d4d4] mb-4">Rechnungseingang pro Woche</h3>
+          <div className="lg:col-span-2 bg-white/50 border border-gray-200 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Rechnungseingang pro Woche</h3>
             {tl.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={tl}>
@@ -103,10 +103,10 @@ export default function AnalyticsPage() {
                   <Area type="monotone" dataKey="count" stroke="#e85d04" fill="url(#cC)" strokeWidth={2} name="Rechnungen" />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : <div className="h-[260px] flex items-center justify-center text-[#525252] text-sm">Keine Daten</div>}
+            ) : <div className="h-[260px] flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>}
           </div>
-          <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-[#d4d4d4] mb-4">Status-Verteilung</h3>
+          <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Status-Verteilung</h3>
             {sd.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart><Pie data={sd} dataKey="count" nameKey="status" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3}
@@ -114,14 +114,14 @@ export default function AnalyticsPage() {
                   {sd.map((e: any, i: number) => <Cell key={i} fill={e.color} />)}
                 </Pie><Tooltip contentStyle={{ background: "#171717", border: "1px solid #262626", borderRadius: 8, fontSize: 12 }} /></PieChart>
               </ResponsiveContainer>
-            ) : <div className="h-[260px] flex items-center justify-center text-[#525252] text-sm">Keine Daten</div>}
+            ) : <div className="h-[260px] flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-[#d4d4d4] mb-1">KI-Kontierung</h3>
-            <p className="text-xs text-[#525252] mb-4">{kp.total} Kontierungen | Confidence: {(kp.avg_confidence * 100).toFixed(0)}%</p>
+          <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">KI-Kontierung</h3>
+            <p className="text-xs text-gray-400 mb-4">{kp.total} Kontierungen | Confidence: {(kp.avg_confidence * 100).toFixed(0)}%</p>
             {conf.length > 0 && (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart><Pie data={conf} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}>
@@ -130,8 +130,8 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             )}
           </div>
-          <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-[#d4d4d4] mb-4">Top Sachkonten (SKR03)</h3>
+          <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Sachkonten (SKR03)</h3>
             {kp.top_konten.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={kp.top_konten} layout="vertical" margin={{ left: 20 }}>
@@ -142,20 +142,20 @@ export default function AnalyticsPage() {
                   <Bar dataKey="count" fill="#e85d04" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <div className="h-[200px] flex items-center justify-center text-[#525252] text-sm">Keine Daten</div>}
+            ) : <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>}
           </div>
         </div>
 
-        <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-[#d4d4d4] mb-4">Letzte Aktivit&auml;ten</h3>
+        <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Letzte Aktivit&auml;ten</h3>
           <div className="space-y-2">
             {ra.map((a: any, i: number) => (
               <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-[#262626]/50 transition">
                 <span className="text-sm font-mono">{a.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-[#d4d4d4] truncate">{a.file_name || a.document_id}</span>
-                  {a.to && <span className="text-xs px-2 py-0.5 rounded-full bg-[#262626] text-[#737373] ml-2">&rarr; {LABELS[a.to] || a.to}</span>}
-                  <div className="text-xs text-[#525252]">{a.actor} | {a.timestamp ? new Date(a.timestamp).toLocaleString("de-DE") : ""}</div>
+                  <span className="text-sm font-medium text-gray-700 truncate">{a.file_name || a.document_id}</span>
+                  {a.to && <span className="text-xs px-2 py-0.5 rounded-full bg-[#262626] text-gray-500 ml-2">&rarr; {LABELS[a.to] || a.to}</span>}
+                  <div className="text-xs text-gray-400">{a.actor} | {a.timestamp ? new Date(a.timestamp).toLocaleString("de-DE") : ""}</div>
                 </div>
               </div>
             ))}
