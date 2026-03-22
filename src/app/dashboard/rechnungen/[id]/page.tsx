@@ -41,13 +41,13 @@ export default function InvoiceDetailPage() {
       setInvoice(inv);
       setEvents(Array.isArray(ev)?ev:ev.events||[]);
       setKontierung(ko);
-    }).finally(() => 
+    }).then(() => {
       // Duplicate + Anomaly checks
       if (id) {
         fetch(API + "/invoices/" + id + "/duplicate-check", { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setDuplicates(d.duplicates || []); }).catch(() => {});
         fetch(API + "/invoices/" + id + "/anomaly-check", { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setAnomalies(d.anomalies || []); }).catch(() => {});
       }
-      setLoading(false));
+    }).finally(() => setLoading(false));
   }, [token, id, user]);
 
   const transition = async (to: string) => {
