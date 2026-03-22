@@ -44,8 +44,8 @@ export default function InvoiceDetailPage() {
     }).finally(() => 
       // Duplicate + Anomaly checks
       if (id) {
-        fetch(\`\${API}/invoices/\${id}/duplicate-check\`, { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setDuplicates(d.duplicates || []); }).catch(() => {});
-        fetch(\`\${API}/invoices/\${id}/anomaly-check\`, { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setAnomalies(d.anomalies || []); }).catch(() => {});
+        fetch(API + "/invoices/" + id + "/duplicate-check", { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setDuplicates(d.duplicates || []); }).catch(() => {});
+        fetch(API + "/invoices/" + id + "/anomaly-check", { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setAnomalies(d.anomalies || []); }).catch(() => {});
       }
       setLoading(false));
   }, [token, id, user]);
