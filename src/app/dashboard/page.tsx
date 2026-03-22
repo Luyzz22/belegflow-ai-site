@@ -29,6 +29,7 @@ export default function DashboardPage() {
     {href:"/dashboard/copilot",icon:"\ud83e\udd16",title:"Finance Copilot",desc:"KI-Chat",color:"from-emerald-500 to-green-600"},
     {href:"/dashboard/spend",icon:"\ud83d\udcb0",title:"Spend Analytics",desc:"Ausgabenanalyse",color:"from-amber-500 to-orange-600"},
     {href:"/dashboard/freigaben",icon:"\u2705",title:"Freigaben",desc:"Rechnungsfreigabe",color:"from-teal-500 to-emerald-600"},
+    {href:"/dashboard/budget",icon:"\ud83d\udccb",title:"Budget",desc:"Jahresplanung",color:"from-blue-500 to-indigo-600"},
   ];
 
   return (
