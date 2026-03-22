@@ -1,4 +1,5 @@
 "use client";
+import { DuplicateAlert, AnomalyAlert, ExportButtons } from "@/components/InvoiceAlerts";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
@@ -26,6 +27,9 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
 
+
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [anomalies, setAnomalies] = useState<any[]>([]);
   useEffect(() => {
     if (!token || !id) return;
     const h = { "X-Tenant-ID": user?.tenant_id || "", Authorization: "Bearer " + token };
@@ -37,7 +41,13 @@ export default function InvoiceDetailPage() {
       setInvoice(inv);
       setEvents(Array.isArray(ev)?ev:ev.events||[]);
       setKontierung(ko);
-    }).finally(() => setLoading(false));
+    }).finally(() => 
+      // Duplicate + Anomaly checks
+      if (id) {
+        fetch(\`\${API}/invoices/\${id}/duplicate-check\`, { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setDuplicates(d.duplicates || []); }).catch(() => {});
+        fetch(\`\${API}/invoices/\${id}/anomaly-check\`, { headers: h }).then(r => r.ok ? r.json() : null).then(d => { if (d) setAnomalies(d.anomalies || []); }).catch(() => {});
+      }
+      setLoading(false));
   }, [token, id, user]);
 
   const transition = async (to: string) => {
@@ -83,7 +93,11 @@ export default function InvoiceDetailPage() {
   return (
     <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
       <div className="border-b border-white/[0.06] bg-[#f4f7fa]/80 backdrop-blur-xl sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 pt-6 space-y-4">
+        <DuplicateAlert duplicates={duplicates} />
+        <AnomalyAlert anomalies={anomalies} />
+      </div>
+      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/dashboard/rechnungen" className="text-gray-500 hover:text-gray-900 transition">← Rechnungen</a>
             <div className="h-6 w-px bg-[#262626]"/>
