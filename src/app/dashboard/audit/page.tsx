@@ -32,6 +32,9 @@ export default function AuditLogPage() {
           <p className="text-sm text-gray-500">{total} Ereignisse gesamt</p>
         </div>
       </div>
+      <div className="mb-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700">
+        Nachvollziehbarkeit: Alle protokollierten Schritte unterstützen eine GoBD-orientierte Prüfspur und interne Freigabeprozesse.
+      </div>
       {loading ? (
         <div className="flex justify-center py-20"><div className="flex gap-1.5">{[0,150,300].map(d=><div key={d} className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{animationDelay:`${d}ms`}}/>)}</div></div>
       ) : (

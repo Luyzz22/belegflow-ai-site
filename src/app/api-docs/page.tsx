@@ -43,6 +43,10 @@ export default function ApiDocsPage() {
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-white mb-3" style={{fontFamily:"'Instrument Serif',serif"}}>API Dokumentation</h1>
           <p className="text-[#a3a3a3] mb-6">RESTful API für die Integration in Ihre bestehenden Systeme. Base URL: <code className="px-2 py-0.5 bg-[#171717] rounded text-[#e85d04] text-sm">https://app.sbsdeutschland.com/api/erechnung</code></p>
+          <div className="flex flex-wrap gap-2 mb-6">
+            <a href="https://app.sbsdeutschland.com/api/erechnung/docs" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Swagger UI</a>
+            <a href="https://app.sbsdeutschland.com/api/erechnung/openapi.json" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">OpenAPI JSON</a>
+          </div>
           <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-5 mb-8">
             <h2 className="text-sm font-semibold text-white mb-3">Authentifizierung</h2>
             <p className="text-sm text-[#737373] mb-3">Alle geschützten Endpoints erfordern einen JWT Bearer Token im Authorization Header:</p>

@@ -39,7 +39,7 @@ export default function Footer() {
         </div>
         <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-[11px] text-[#404040]">© 2026 BelegFlow AI — Ein Produkt von SBS Deutschland GmbH & Co. KG</p>
-          <p className="text-[11px] text-[#404040]">Rechenzentrum Frankfurt 🇩🇪 · DSGVO-konform · GoBD-zertifiziert</p>
+          <p className="text-[11px] text-[#404040]">Rechenzentrum Frankfurt 🇩🇪 · DSGVO-orientierte Verarbeitung · GoBD-orientierte Prüfspur</p>
         </div>
       </div>
     </footer>
