@@ -95,6 +95,20 @@ export default function KontaktPage() {
                 <p className="text-sm font-medium text-white mb-2">Lieber gleich loslegen?</p>
                 <Link href="/register" className="inline-flex px-5 py-2 bg-[#e85d04] rounded-lg text-sm font-medium text-white hover:bg-[#f48c06] transition">Kostenlos registrieren</Link>
               </div>
+              <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-4">
+                <p className="text-xs text-[#525252] mb-2">Beschaffung & Prüfung</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["/sicherheit", "Sicherheit"],
+                    ["/compliance", "Compliance"],
+                    ["/avv", "AVV"],
+                    ["/faq", "FAQ"],
+                    ["/api-docs", "API"],
+                  ].map(([href, label]) => (
+                    <Link key={href} href={href} className="text-xs px-2.5 py-1 rounded-md border border-[#303030] text-[#a3a3a3] hover:text-white hover:border-[#e85d04]/60 transition">{label}</Link>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}

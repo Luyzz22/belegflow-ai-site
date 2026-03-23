@@ -9,7 +9,7 @@ export default function PublicNav({ cta = true }: { cta?: boolean }) {
           <span className="text-[22px] text-white" style={{fontFamily:"'Instrument Serif',serif"}}>BelegFlow AI</span>
         </Link>
         <div className="hidden md:flex items-center gap-6">
-          {[["/#features","Features"],["/#preise","Preise"],["/guide","Guide"],["/api-docs","API"]].map(([h,l])=>(
+          {[["/#features","Features"],["/guide","Guide"],["/faq","FAQ"],["/compliance","Trust"],["/api-docs","API"]].map(([h,l])=>(
             <Link key={h} href={h} className="text-sm text-[#a3a3a3] hover:text-white transition">{l}</Link>
           ))}
         </div>
