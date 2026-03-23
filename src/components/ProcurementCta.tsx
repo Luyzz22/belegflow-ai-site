@@ -5,7 +5,11 @@ const paths = [
     title: "Für CFO & Finance",
     desc: "Kostenkontrolle, Freigaben, Budget-Tracking und DATEV-kompatibler Export für steuerberatende Workflows.",
     links: [
+<<<<<<< codex/implement-product-differentiation-and-compliance-updates-3qbb1n
       { href: "/demo", label: "Demo anfragen" },
+=======
+      { href: "/kontakt", label: "Demo anfragen" },
+>>>>>>> main
       { href: "/faq", label: "FAQ lesen" },
     ],
   },

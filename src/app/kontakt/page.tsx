@@ -34,6 +34,7 @@ export default function KontaktPage() {
             </div>
           </div>
 
+<<<<<<< codex/implement-product-differentiation-and-compliance-updates-3qbb1n
           <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-5 text-sm text-[#a3a3a3] space-y-2">
             <h2 className="text-sm font-semibold text-white">Hinweise zur Anfragebearbeitung</h2>
             <p>Ihre Angaben werden zur Bearbeitung Ihrer geschäftlichen Anfrage verarbeitet und intern an zuständige Fachbereiche übergeben.</p>
@@ -41,6 +42,44 @@ export default function KontaktPage() {
             <p>
               Rückfragen auch per E-Mail: <a className="text-[#e85d04] hover:text-[#f48c06]" href="mailto:ki@sbsdeutschland.de">ki@sbsdeutschland.de</a>
             </p>
+=======
+            <div className="lg:col-span-2 space-y-4">
+              {[
+                {icon:"📧",title:"E-Mail",desc:"ki@sbsdeutschland.de",href:"mailto:ki@sbsdeutschland.de"},
+                {icon:"🌐",title:"Website",desc:"sbsdeutschland.com",href:"https://sbsdeutschland.com"},
+                {icon:"📍",title:"Standort",desc:"Heiligkreuzsteinach, BW",href:null},
+                {icon:"⏱",title:"Antwortzeit",desc:"Innerhalb von 24h",href:null},
+              ].map((c,i)=>(
+                <div key={i} className="bg-[#171717]/50 border border-[#262626] rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{c.icon}</span>
+                    <div>
+                      <p className="text-xs text-[#525252]">{c.title}</p>
+                      {c.href ? <a href={c.href} className="text-sm text-[#e85d04] hover:text-[#f48c06]">{c.desc}</a> : <p className="text-sm text-[#d4d4d4]">{c.desc}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="bg-gradient-to-br from-[#e85d04]/10 to-[#171717] border border-[#e85d04]/20 rounded-xl p-5 text-center">
+                <p className="text-sm font-medium text-white mb-2">Lieber gleich loslegen?</p>
+                <Link href="/register" className="inline-flex px-5 py-2 bg-[#e85d04] rounded-lg text-sm font-medium text-white hover:bg-[#f48c06] transition">Kostenlos registrieren</Link>
+              </div>
+              <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-4">
+                <p className="text-xs text-[#525252] mb-2">Beschaffung & Prüfung</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["/sicherheit", "Sicherheit"],
+                    ["/compliance", "Compliance"],
+                    ["/avv", "AVV"],
+                    ["/faq", "FAQ"],
+                    ["/api-docs", "API"],
+                  ].map(([href, label]) => (
+                    <Link key={href} href={href} className="text-xs px-2.5 py-1 rounded-md border border-[#303030] text-[#a3a3a3] hover:text-white hover:border-[#e85d04]/60 transition">{label}</Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+>>>>>>> main
           </div>
         </aside>
       </div>

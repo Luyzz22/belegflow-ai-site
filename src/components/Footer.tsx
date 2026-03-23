@@ -31,7 +31,11 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Starten</h4>
             <div className="space-y-2">
+<<<<<<< codex/implement-product-differentiation-and-compliance-updates-3qbb1n
               <Link href="/demo" className="block text-xs text-[#e85d04] hover:text-[#f48c06] font-medium transition">Demo anfragen</Link>
+=======
+              <Link href="/kontakt" className="block text-xs text-[#e85d04] hover:text-[#f48c06] font-medium transition">Demo anfragen</Link>
+>>>>>>> main
               <a href="mailto:ki@sbsdeutschland.de" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Vertrieb kontaktieren</a>
               <Link href="/register" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Kostenlos registrieren</Link>
               <Link href="/login" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Anmelden</Link>
