@@ -1,7 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "API Dokumentation" };
+export const metadata: Metadata = {
+  title: "API Dokumentation",
+  description: "API-Zugang, OpenAPI und technische Rückfragen für IT, Datenschutz und Einkauf.",
+};
 
 const endpoints = [
   { method: "POST", path: "/users/register", desc: "Neuen Account erstellen (Auto-Tenant)", auth: "Keine" },
@@ -46,7 +49,7 @@ export default function ApiDocsPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             <a href="https://app.sbsdeutschland.com/api/erechnung/docs" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Swagger UI</a>
             <a href="https://app.sbsdeutschland.com/api/erechnung/openapi.json" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">OpenAPI JSON</a>
-            <a href="/demo" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Technische Rückfrage</a>
+            <a href="/kontakt?reason=api" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Technische Rückfrage senden</a>
           </div>
           <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-5 mb-8">
             <h2 className="text-sm font-semibold text-white mb-3">Authentifizierung</h2>
@@ -68,6 +71,17 @@ export default function ApiDocsPage() {
             </div>
           ))}
         </div>
+
+        <div className="mt-8 bg-[#171717]/50 border border-[#262626] rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-white mb-2">Für IT, Datenschutz und Einkauf</h2>
+          <p className="text-sm text-[#a3a3a3] mb-3">Für Security-/Compliance-Prüfungen sind API-Docs, Sicherheitsseite und AVV-Infos intern verlinkt.</p>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/sicherheit" className="px-3 py-1.5 text-xs border border-[#303030] rounded-lg hover:border-[#e85d04]/60 transition">Sicherheit</Link>
+            <Link href="/compliance" className="px-3 py-1.5 text-xs border border-[#303030] rounded-lg hover:border-[#e85d04]/60 transition">Compliance</Link>
+            <Link href="/avv" className="px-3 py-1.5 text-xs border border-[#303030] rounded-lg hover:border-[#e85d04]/60 transition">AVV</Link>
+          </div>
+        </div>
+
         <div className="mt-12 bg-gradient-to-r from-[#e85d04]/10 to-[#171717] border border-[#e85d04]/20 rounded-xl p-6 text-center">
           <p className="text-sm text-[#a3a3a3] mb-3">Vollständige interaktive API-Dokumentation mit Swagger UI</p>
           <a href="https://app.sbsdeutschland.com/api/erechnung/docs" target="_blank" rel="noopener" className="inline-flex px-6 py-2.5 bg-[#e85d04] rounded-xl text-sm font-medium text-white hover:bg-[#f48c06] transition">Swagger UI öffnen →</a>

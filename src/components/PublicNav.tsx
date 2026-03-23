@@ -16,7 +16,7 @@ export default function PublicNav({ cta = true }: { cta?: boolean }) {
         {cta && (
           <div className="flex items-center gap-3">
             <Link href="/login" className="px-4 py-2 border border-white/[0.12] rounded-lg text-sm text-white hover:bg-white/[0.04] transition">Login</Link>
-            <Link href="/register" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm font-semibold text-white hover:bg-[#f48c06] transition">Kostenlos testen</Link>
+            <Link href="/demo" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm font-semibold text-white hover:bg-[#f48c06] transition">Demo anfragen</Link>
           </div>
         )}
       </div>

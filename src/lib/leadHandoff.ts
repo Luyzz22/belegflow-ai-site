@@ -23,63 +23,129 @@ export type LeadMeta = {
 };
 
 export type LeadHandoffResult = {
-  mode: "webhook" | "noop";
+  mode: "webhook" | "multi_adapter" | "noop";
   delivered: boolean;
   detail: string;
+  destinations: Array<{
+    channel: "webhook" | "hubspot" | "pipedrive" | "notification_email";
+    status: "delivered" | "skipped" | "failed";
+    detail: string;
+  }>;
 };
+
+type AdapterChannel = LeadHandoffResult["destinations"][number]["channel"];
 
 const WEBHOOK_TIMEOUT_MS = 6000;
 
-async function postWebhook(payload: LeadPayload, meta: LeadMeta): Promise<LeadHandoffResult> {
-  const webhookUrl = process.env.LEAD_WEBHOOK_URL;
-  if (!webhookUrl) {
-    return {
-      mode: "noop",
-      delivered: false,
-      detail: "LEAD_WEBHOOK_URL ist nicht gesetzt. Lead wurde serverseitig validiert, aber nicht extern zugestellt.",
-    };
-  }
-
-  const token = process.env.LEAD_WEBHOOK_TOKEN;
+async function postWithTimeout(url: string, body: unknown, token?: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
 
   try {
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ payload, meta }),
+      body: JSON.stringify(body),
       signal: controller.signal,
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      return {
-        mode: "webhook",
-        delivered: false,
-        detail: `Webhook antwortete mit HTTP ${response.status}`,
-      };
-    }
-
-    return {
-      mode: "webhook",
-      delivered: true,
-      detail: "Lead wurde erfolgreich an den Webhook übergeben.",
-    };
-  } catch (error) {
-    return {
-      mode: "webhook",
-      delivered: false,
-      detail: error instanceof Error ? error.message : "Webhook-Fehler",
-    };
+    return response;
   } finally {
     clearTimeout(timeout);
   }
 }
 
+async function runWebhookAdapter(payload: LeadPayload, meta: LeadMeta) {
+  const webhookUrl = process.env.LEAD_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return {
+      channel: "webhook" as AdapterChannel,
+      status: "skipped" as const,
+      detail: "LEAD_WEBHOOK_URL nicht gesetzt.",
+    };
+  }
+
+  try {
+    const response = await postWithTimeout(
+      webhookUrl,
+      {
+        payload,
+        meta,
+        source: "belegflow-ai-site",
+      },
+      process.env.LEAD_WEBHOOK_TOKEN,
+    );
+
+    if (!response.ok) {
+      return {
+        channel: "webhook" as AdapterChannel,
+        status: "failed" as const,
+        detail: `Webhook HTTP ${response.status}`,
+      };
+    }
+
+    return {
+      channel: "webhook" as AdapterChannel,
+      status: "delivered" as const,
+      detail: "Webhook erfolgreich zugestellt.",
+    };
+  } catch (error) {
+    return {
+      channel: "webhook" as AdapterChannel,
+      status: "failed" as const,
+      detail: error instanceof Error ? error.message : "Webhook-Fehler",
+    };
+  }
+}
+
+function preparedAdapter(channel: AdapterChannel, envFlag: string) {
+  const configured = process.env[envFlag];
+  return {
+    channel,
+    status: "skipped" as const,
+    detail: configured
+      ? `${channel}-Adapter vorbereitet, aber nicht aktiviert (Claim nur nach technischer Bestätigung veröffentlichen).`
+      : `${channel}-Adapter nicht konfiguriert.`,
+  };
+}
+
 export async function handoffLead(payload: LeadPayload, meta: LeadMeta): Promise<LeadHandoffResult> {
-  return postWebhook(payload, meta);
+  const destinations = [
+    await runWebhookAdapter(payload, meta),
+    preparedAdapter("hubspot", "LEAD_HUBSPOT_ENABLED"),
+    preparedAdapter("pipedrive", "LEAD_PIPEDRIVE_ENABLED"),
+    preparedAdapter("notification_email", "LEAD_NOTIFICATION_EMAIL"),
+  ];
+
+  const delivered = destinations.some((item) => item.status === "delivered");
+  const failedWebhook = destinations.some((item) => item.channel === "webhook" && item.status === "failed");
+
+  if (failedWebhook) {
+    return {
+      mode: "webhook",
+      delivered: false,
+      detail: "Lead validiert, aber Webhook-Übergabe fehlgeschlagen.",
+      destinations,
+    };
+  }
+
+  if (delivered) {
+    return {
+      mode: "multi_adapter",
+      delivered: true,
+      detail: "Lead erfolgreich zugestellt.",
+      destinations,
+    };
+  }
+
+  return {
+    mode: "noop",
+    delivered: false,
+    detail: "Lead validiert. Keine aktive externe Zustellung konfiguriert.",
+    destinations,
+  };
 }

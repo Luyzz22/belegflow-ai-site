@@ -38,7 +38,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="px-4 py-2 border border-white/[0.12] rounded-lg text-sm hover:bg-white/[0.04] transition">Login</Link>
-            <Link href="/register" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm font-semibold hover:bg-[#f48c06] transition">Kostenlos testen</Link>
+            <Link href="/demo" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm font-semibold hover:bg-[#f48c06] transition">Demo anfragen</Link>
           </div>
         </div>
       </nav>
@@ -179,6 +179,7 @@ export default function HomePage() {
               ["/avv", "AVV"],
               ["/faq", "FAQ"],
               ["/api-docs", "API / OpenAPI"],
+              ["/kontakt", "Technische Rückfrage senden"],
               ["/demo", "Demo anfragen"],
             ].map(([href, label]) => (
               <Link key={href} href={href} className="px-4 py-2 rounded-lg border border-[#303030] text-sm text-[#d4d4d4] hover:border-[#e85d04]/60 hover:text-white transition">{label}</Link>
