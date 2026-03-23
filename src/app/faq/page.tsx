@@ -84,6 +84,7 @@ export default function FaqPage() {
           <h2 className="text-lg text-white mb-3" style={{fontFamily:"'Instrument Serif',serif"}}>Nächste Schritte</h2>
           <div className="flex flex-wrap gap-2">
             <Link href="/demo" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm text-white hover:bg-[#f48c06] transition">Demo anfragen</Link>
+            <Link href="/kontakt" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm text-white hover:bg-[#f48c06] transition">Demo anfragen</Link>
             <Link href="/compliance" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Compliance</Link>
             <Link href="/api-docs" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">API / OpenAPI</Link>
           </div>

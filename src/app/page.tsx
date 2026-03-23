@@ -180,6 +180,7 @@ export default function HomePage() {
               ["/faq", "FAQ"],
               ["/api-docs", "API / OpenAPI"],
               ["/demo", "Demo anfragen"],
+              ["/kontakt", "Demo anfragen"],
             ].map(([href, label]) => (
               <Link key={href} href={href} className="px-4 py-2 rounded-lg border border-[#303030] text-sm text-[#d4d4d4] hover:border-[#e85d04]/60 hover:text-white transition">{label}</Link>
             ))}

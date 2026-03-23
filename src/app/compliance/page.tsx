@@ -52,6 +52,7 @@ export default function CompliancePage() {
             <Link href="/sicherheit" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Sicherheitsseite</Link>
             <Link href="/api-docs" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">API / OpenAPI</Link>
             <Link href="/demo" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Demo / Vertrieb</Link>
+            <Link href="/kontakt" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Vertrieb kontaktieren</Link>
           </div>
         </section>
       </div>

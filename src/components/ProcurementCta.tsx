@@ -1,9 +1,12 @@
+import Link from "next/link";
+
 const paths = [
   {
     title: "Für CFO & Finance",
     desc: "Kostenkontrolle, Freigaben, Budget-Tracking und DATEV-kompatibler Export für steuerberatende Workflows.",
     links: [
       { href: "/demo", label: "Demo anfragen" },
+      { href: "/kontakt", label: "Demo anfragen" },
       { href: "/faq", label: "FAQ lesen" },
     ],
   },
@@ -45,6 +48,9 @@ export default function ProcurementCta() {
                   <a key={link.href} href={link.href} className="px-3 py-1.5 rounded-lg text-xs border border-[#303030] text-[#d4d4d4] hover:border-[#e85d04]/60 hover:text-white transition">
                     {link.label}
                   </a>
+                  <Link key={link.href} href={link.href} className="px-3 py-1.5 rounded-lg text-xs border border-[#303030] text-[#d4d4d4] hover:border-[#e85d04]/60 hover:text-white transition">
+                    {link.label}
+                  </Link>
                 ))}
               </div>
             </div>
