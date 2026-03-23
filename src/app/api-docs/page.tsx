@@ -46,6 +46,7 @@ export default function ApiDocsPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             <a href="https://app.sbsdeutschland.com/api/erechnung/docs" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Swagger UI</a>
             <a href="https://app.sbsdeutschland.com/api/erechnung/openapi.json" target="_blank" rel="noopener" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">OpenAPI JSON</a>
+            <a href="/demo" className="px-3 py-1.5 text-xs bg-[#171717] border border-[#262626] rounded-lg text-[#a3a3a3] hover:text-white transition">Technische Rückfrage</a>
           </div>
           <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-5 mb-8">
             <h2 className="text-sm font-semibold text-white mb-3">Authentifizierung</h2>

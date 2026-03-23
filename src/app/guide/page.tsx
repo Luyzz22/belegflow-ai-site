@@ -131,7 +131,7 @@ export default function GuidePage() {
             <p className="text-[#a3a3a3] mb-6 max-w-md mx-auto">Starten Sie jetzt mit BelegFlow AI — kostenloser Starter-Plan, keine Einrichtungskosten, in 5 Minuten startklar.</p>
             <div className="flex items-center justify-center gap-3">
               <Link href="/register" className="px-6 py-3 bg-[#e85d04] hover:bg-[#f48c06] rounded-xl text-sm font-semibold text-white transition">Kostenlos starten</Link>
-              <a href="mailto:ki@sbsdeutschland.de" className="px-6 py-3 border border-[#262626] rounded-xl text-sm text-[#a3a3a3] hover:text-white transition">Demo anfordern</a>
+              <Link href="/demo" className="px-6 py-3 border border-[#262626] rounded-xl text-sm text-[#a3a3a3] hover:text-white transition">Demo anfordern</Link>
             </div>
           </section>
         </div>

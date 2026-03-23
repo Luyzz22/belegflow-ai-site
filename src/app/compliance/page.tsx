@@ -51,7 +51,7 @@ export default function CompliancePage() {
             <Link href="/avv" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm text-white hover:bg-[#f48c06] transition">AVV-Informationen</Link>
             <Link href="/sicherheit" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Sicherheitsseite</Link>
             <Link href="/api-docs" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">API / OpenAPI</Link>
-            <Link href="/kontakt" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Vertrieb kontaktieren</Link>
+            <Link href="/demo" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">Demo / Vertrieb</Link>
           </div>
         </section>
       </div>

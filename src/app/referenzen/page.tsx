@@ -35,7 +35,7 @@ export default function ReferenzenPage() {
           <h2 className="text-lg text-white mb-2" style={{fontFamily:"'Instrument Serif',serif"}}>Pilot- oder Referenzgespräch</h2>
           <p className="text-sm text-[#a3a3a3] mb-4">Auf Anfrage organisieren wir ein strukturiertes Gespräch zu Implementierung, Prozessfit und Risikobewertung. Referenzgespräche erfolgen nur mit Freigabe und unter Vertraulichkeit.</p>
           <div className="flex flex-wrap gap-2">
-            <Link href="/kontakt" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm text-white hover:bg-[#f48c06] transition">Referenzgespräch anfragen</Link>
+            <Link href="/demo" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm text-white hover:bg-[#f48c06] transition">Referenzgespräch anfragen</Link>
             <Link href="/faq" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">FAQ</Link>
             <Link href="/guide" className="px-4 py-2 border border-[#303030] rounded-lg text-sm hover:border-[#e85d04]/60 transition">E-Rechnung Guide</Link>
           </div>
