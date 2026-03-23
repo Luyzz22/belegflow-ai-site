@@ -70,6 +70,9 @@ export default function CopilotPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 pb-36">
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-900">
+          Transparenz-Hinweis: Antworten werden KI-gestützt erzeugt und können unvollständig sein. Keine Rechts- oder Steuerberatung; Ergebnisse bitte fachlich prüfen (juristisch prüfen / steuerlich validieren).
+        </div>
         <div className="py-6 space-y-6">
           {messages.map((msg, i) => (
             <div key={i} className={"flex " + (msg.role === "user" ? "justify-end" : "justify-start")}>
@@ -133,7 +136,7 @@ export default function CopilotPage() {
               {loading ? "..." : "Senden"}
             </button>
           </div>
-          <p className="text-center text-xs text-[#404040] mt-2">Antworten basieren auf Echtzeitdaten · Gemini 2.0 Flash + Claude Sonnet</p>
+          <p className="text-center text-xs text-[#404040] mt-2">Antworten basieren auf Echtzeitdaten und KI-Modellen · Gemini 2.0 Flash + Claude Sonnet</p>
         </div>
       </div>
     </div>

@@ -158,16 +158,20 @@ export default function InvoiceDetailPage() {
             {kontierung && (
               <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
                 <h2 className="text-sm font-semibold text-gray-700 mb-4">🤖 KI-Kontierung</h2>
+                <p className="text-xs text-gray-500 mb-3">
+                  KI-Kontierung nach SKR03/SKR04 ist eine Entscheidungshilfe. Vorschläge bitte fachlich prüfen und bei Bedarf korrigieren (steuerlich validieren).
+                </p>
                 {[
                   {l:"Sachkonto",v:kontierung.konto||"—"},
                   {l:"Gegenkonto",v:kontierung.gegenkonto||"—"},
                   {l:"Steuerschlüssel",v:kontierung.tax_code||"—"},
                   {l:"Konfidenz",v:kontierung.confidence?Math.round(kontierung.confidence*100)+"%":"—"},
                   {l:"Modell",v:kontierung.model||"—"},
+                  {l:"Begründung",v:kontierung.reasoning||kontierung.reason||"—"},
                 ].map((r,i)=>(
                   <div key={i} className="flex justify-between py-1.5 border-b border-gray-200 last:border-0">
                     <span className="text-xs text-gray-500">{r.l}</span>
-                    <span className="text-xs font-medium">{r.v}</span>
+                    <span className="text-xs font-medium text-right max-w-[60%] break-words">{r.v}</span>
                   </div>
                 ))}
               </div>
@@ -177,7 +181,8 @@ export default function InvoiceDetailPage() {
 
         {/* Events Timeline */}
         <div className="bg-white/50 border border-gray-200 rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Verlauf ({events.length} Events)</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-1">Verlauf ({events.length} Events)</h2>
+          <p className="text-xs text-gray-500 mb-4">Die Event-Historie bildet eine GoBD-orientierte Prüfspur für Nachvollziehbarkeit von Upload bis Export ab (Claim nur nach technischer Bestätigung veröffentlichen).</p>
           {events.length === 0 ? (
             <p className="text-sm text-gray-400">Keine Events vorhanden</p>
           ) : (

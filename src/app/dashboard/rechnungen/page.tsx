@@ -108,6 +108,9 @@ export default function RechnungenPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {msg&&<div className={"mb-4 rounded-xl px-4 py-3 text-sm "+(msg.startsWith("Fehler")?"bg-red-500/10 text-red-400 border border-red-500/30":"bg-emerald-500/10 text-emerald-400 border border-emerald-500/30")}>{msg}<button onClick={()=>setMsg("")} className="float-right opacity-60">✕</button></div>}
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs text-blue-900">
+          Datenschutz-Hinweis: Hochgeladene Dokumente werden zur Verarbeitung und für KI-gestützte Vorschläge genutzt. KI-Ergebnisse sind jederzeit prüf- und korrigierbar (DSB prüfen).
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1 relative">
