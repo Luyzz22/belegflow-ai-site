@@ -1,30 +1,40 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { persistSession } from "@/lib/session";
 
-const API = "https://app.sbsdeutschland.com/api/erechnung";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://app.sbsdeutschland.com/api/erechnung";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
       const res = await fetch(API + "/users/login", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "Login fehlgeschlagen"); }
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.detail || "Login fehlgeschlagen");
+      }
       const d = await res.json();
-      localStorage.setItem("bf_token", d.tokens.access_token);
-      localStorage.setItem("bf_refresh", d.tokens.refresh_token);
-      localStorage.setItem("bf_user", JSON.stringify(d.user));
-      window.location.href = "/dashboard";
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+      persistSession({ accessToken: d.tokens.access_token, refreshToken: d.tokens.refresh_token }, d.user);
+      const params = new URLSearchParams(window.location.search);
+      const nextPath = params.get("next") || "/dashboard";
+      const safeNext = nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/dashboard";
+      window.location.href = safeNext;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login fehlgeschlagen");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

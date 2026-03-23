@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { clearSession, getStoredRefreshToken, getStoredToken, getStoredUser, persistUser, updateAccessToken } from "@/lib/session";
 
-const API = "https://app.sbsdeutschland.com/api/erechnung";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://app.sbsdeutschland.com/api/erechnung";
 
 export interface User {
   id: string;
@@ -20,51 +21,70 @@ export function useAuth() {
   const [token, setToken] = useState("");
   const router = useRouter();
 
-  useEffect(() => { checkAuth(); }, []);
+  useEffect(() => {
+    void checkAuth();
+  }, []);
 
   const checkAuth = async () => {
-    const stored = localStorage.getItem("bf_token");
-    const storedUser = localStorage.getItem("bf_user");
-    if (!stored) { router.replace("/login"); return; }
-    setToken(stored);
-    if (storedUser) { try { setUser(JSON.parse(storedUser)); } catch {} }
+    const storedToken = getStoredToken();
+    const storedUser = getStoredUser<User>();
+
+    if (!storedToken) {
+      setLoading(false);
+      router.replace("/login");
+      return;
+    }
+
+    setToken(storedToken);
+    if (storedUser) {
+      setUser(storedUser);
+    }
+
     try {
-      const res = await fetch(API + "/users/profile", { headers: { Authorization: "Bearer " + stored } });
+      const res = await fetch(API + "/users/profile", { headers: { Authorization: "Bearer " + storedToken } });
       if (res.ok) {
-        const p = await res.json();
-        setUser(p);
-        localStorage.setItem("bf_user", JSON.stringify(p));
+        const profile = (await res.json()) as User;
+        setUser(profile);
+        persistUser(profile);
       } else if (res.status === 401) {
-        const ok = await tryRefresh();
-        if (!ok) { logout(); return; }
+        const refreshed = await tryRefresh();
+        if (!refreshed) {
+          logout();
+          return;
+        }
       }
-    } catch {}
-    setLoading(false);
+    } catch {
+      // Netzwerkfehler: bestehende Session im UI sichtbar lassen.
+    } finally {
+      setLoading(false);
+    }
   };
 
   const tryRefresh = async () => {
-    const rt = localStorage.getItem("bf_refresh");
-    if (!rt) return false;
+    const refreshToken = getStoredRefreshToken();
+    if (!refreshToken) return false;
+
     try {
       const res = await fetch(API + "/auth/refresh", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: rt }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
       });
-      if (res.ok) {
-        const d = await res.json();
-        localStorage.setItem("bf_token", d.access_token);
-        localStorage.setItem("bf_refresh", d.refresh_token);
-        setToken(d.access_token);
-        return true;
-      }
-    } catch {}
-    return false;
+      if (!res.ok) return false;
+
+      const data = (await res.json()) as { access_token: string; refresh_token: string };
+      updateAccessToken(data.access_token, data.refresh_token);
+      setToken(data.access_token);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("bf_token");
-    localStorage.removeItem("bf_refresh");
-    localStorage.removeItem("bf_user");
+    clearSession();
+    setUser(null);
+    setToken("");
     router.replace("/login");
   };
 

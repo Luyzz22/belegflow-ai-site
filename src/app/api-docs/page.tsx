@@ -57,6 +57,14 @@ export default function ApiDocsPage() {
             <code className="block bg-[#0f0f0f] rounded-lg p-3 text-sm text-[#a3a3a3] overflow-x-auto">Authorization: Bearer eyJhbGciOiJIUzI1NiIs...</code>
             <p className="text-xs text-[#525252] mt-3">Token erhalten Sie über POST /users/login. Token sind 24h gültig, Refresh-Tokens 30 Tage.</p>
           </div>
+          <div className="bg-[#171717]/50 border border-[#262626] rounded-xl p-5 mb-8">
+            <h2 className="text-sm font-semibold text-white mb-3">Transparenz & Betriebsgrenzen</h2>
+            <ul className="text-sm text-[#a3a3a3] list-disc pl-5 space-y-2">
+              <li>KI-Vorschläge (inkl. Kontierung nach SKR03/SKR04) sind als Entscheidungshilfe zu verstehen und prüf- sowie korrigierbar.</li>
+              <li>Export-Endpunkte liefern DATEV-kompatible Datenformate; fachliche Endabnahme bitte steuerlich validieren.</li>
+              <li>Compliance-Claims nur nach technischer Bestätigung veröffentlichen (z. B. juristisch prüfen / DSB prüfen).</li>
+            </ul>
+          </div>
         </div>
         <div className="space-y-2">
           <div className="hidden sm:grid grid-cols-12 gap-4 px-4 py-2 text-xs text-[#525252] uppercase tracking-wider font-medium">

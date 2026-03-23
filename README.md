@@ -40,3 +40,25 @@ Was **noch fehlt**:
 - Einordnung zu GoBD / E-Rechnung / DATEV-Workflows: **steuerlich validieren**.
 - Aussagen zu Integrationen, SLA, Betriebszusagen: **Claim nur nach technischer Bestätigung veröffentlichen**.
 - Vertragsnahe Aussagen (AVV, TOMs, Subprocessor): **juristisch prüfen**.
+
+
+## Operative Produkt-Härtung (UI-seitiger Stand)
+
+- Defensivere Session-Pfade:
+  - Login synchronisiert Access-/Refresh-Token und Session-Cookie (`bf_session`) für Middleware-Guarding.
+  - `/dashboard`-Routen werden bei fehlender Session auf `/login` umgeleitet.
+- Sensible Bereiche (z. B. Audit, Freigaben, Exporte) sind zusätzlich mit Rollen-Gates im UI versehen.
+- Audit-/Freigabe-/Export-Seiten enthalten Transparenzhinweise zu Prüf- und Korrekturfähigkeit sowie zur GoBD-orientierten Prüfspur.
+- Fehlerbehandlung in kritischen Dashboard-Bereichen wurde auf klarere Operator-Meldungen verbessert.
+
+## API-/Doku-Sichtbarkeit
+
+- Öffentliche API-Dokumentationsseite: `/api-docs`.
+- Verlinkte Artefakte:
+  - Swagger UI
+  - OpenAPI JSON
+- Bitte Claims zu Compliance/Integrationen nur nach technischer Bestätigung veröffentlichen.
+
+## Security-Dokument
+
+- Siehe `SECURITY.md` für umgesetzte Frontend-Defaults, bekannte Grenzen und Disclosure-Kanal.

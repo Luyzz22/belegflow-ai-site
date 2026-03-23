@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/useAuth";
+import RoleGate from "@/components/RoleGate";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://app.sbsdeutschland.com/api/erechnung";
 
@@ -32,6 +33,7 @@ export default function FreigabenPage() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "history" | "rules">("pending");
+  const [msg, setMsg] = useState("");
 
   const fetchInvoices = useCallback(() => {
     if (!token) return;
@@ -43,7 +45,20 @@ export default function FreigabenPage() {
 
   const transition = async (docId: string, toState: string) => {
     setActionId(docId);
-    try { await fetch(`${API}/invoices/${docId}/transition`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-Tenant-ID": user?.tenant_id || "" }, body: JSON.stringify({ to_state: toState, actor: user?.name || "User" }) }); fetchInvoices(); } catch (e) { console.error(e); }
+    setMsg("");
+    try {
+      const res = await fetch(`${API}/invoices/${docId}/transition`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-Tenant-ID": user?.tenant_id || "" },
+        body: JSON.stringify({ to_state: toState, actor: user?.name || "User" }),
+      });
+      if (!res.ok) {
+        setMsg("Freigabestatus konnte nicht aktualisiert werden.");
+      }
+      fetchInvoices();
+    } catch {
+      setMsg("Freigabestatus konnte nicht aktualisiert werden.");
+    }
     setActionId(null);
   };
 
@@ -53,6 +68,7 @@ export default function FreigabenPage() {
   const tabs = [{ key: "pending", label: "Ausstehend", count: pending.length }, { key: "history", label: "Erledigt", count: completed.length }, { key: "rules", label: "Regeln" }] as const;
 
   return (
+    <RoleGate user={user} allowedRoles={["admin", "editor"]} areaLabel="Freigaben">
     <div className="">
       <div className="border-b border-gray-200 bg-[#f4f7fa]/80  sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -70,6 +86,10 @@ export default function FreigabenPage() {
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700">
+          Transparenzhinweis: KI-Vorschläge sind prüf- und korrigierbar. Freigabestatus und Aktionen werden als Audit-Ereignisse nachverfolgbar verarbeitet.
+        </div>
+        {msg && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{msg}</div>}
         {loading ? (<div className="flex justify-center py-20"><div className="flex gap-1.5">{[0, 150, 300].map(d => (<div key={d} className="w-2.5 h-2.5 bg-[#e85d04] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />))}</div></div>) : (<>
           {tab === "pending" && (<>{pending.length === 0 ? (<div className="bg-white border border-gray-200 rounded-xl p-12 text-center"><div className="text-4xl mb-3">✅</div><p className="text-gray-600 font-medium">Alles freigegeben</p></div>) : (<div className="space-y-2">{pending.map(inv => { const status = STATUS_MAP[inv.current_state || inv.status] || STATUS_MAP.classified; return (<div key={inv.document_id} className={`bg-white border border-gray-200 rounded-2xl px-5 shadow-sm py-4 flex items-center gap-4 ${actionId === inv.document_id ? "opacity-50" : "hover:border-gray-300"}`}><div className="flex-1 min-w-0"><a href={`/dashboard/rechnungen/${inv.document_id}`} className="text-sm font-medium text-gray-900 hover:text-[#e85d04] transition truncate block">{inv.supplier || inv.file_name || inv.document_id.slice(0, 12)}</a><div className="flex items-center gap-3 mt-1.5 flex-wrap"><span className="text-[11px] text-gray-300">{inv.file_name}</span>{inv.total_amount && <span className="text-sm font-semibold">{Number(inv.total_amount).toLocaleString("de-DE", { style: "currency", currency: inv.currency || "EUR" })}</span>}<span className={`text-[10px] px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span></div></div><div className="flex items-center gap-2 shrink-0"><button onClick={() => transition(inv.document_id, "approved")} disabled={actionId === inv.document_id} className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition">Freigeben</button><button onClick={() => transition(inv.document_id, "rejected")} disabled={actionId === inv.document_id} className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/25 rounded-lg text-xs font-medium hover:bg-red-500/20 transition">Ablehnen</button></div></div>); })}</div>)}</>)}
           {tab === "history" && (<>{completed.length === 0 ? (<div className="bg-white border border-gray-200 rounded-xl p-12 text-center"><p className="text-gray-400 text-sm">Keine erledigten Freigaben</p></div>) : (<div className="space-y-2">{completed.map(inv => { const status = STATUS_MAP[inv.current_state || inv.status] || STATUS_MAP.approved; return (<div key={inv.document_id} className="bg-white border border-gray-200 rounded-2xl px-5 shadow-sm py-3 flex items-center gap-4"><div className="flex-1 min-w-0"><a href={`/dashboard/rechnungen/${inv.document_id}`} className="text-sm text-gray-600 hover:text-gray-900 transition truncate block">{inv.supplier || inv.file_name}</a>{inv.total_amount && <span className="text-xs text-gray-500">{Number(inv.total_amount).toLocaleString("de-DE", { style: "currency", currency: inv.currency || "EUR" })}</span>}</div><span className={`text-[10px] px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span></div>); })}</div>)}</>)}
@@ -77,5 +97,6 @@ export default function FreigabenPage() {
         </>)}
       </div>
     </div>
+    </RoleGate>
   );
 }
