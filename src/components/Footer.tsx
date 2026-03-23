@@ -15,15 +15,15 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Produkt</h4>
             <div className="space-y-2">
-              {[["/#features","Features"],["/#preise","Preise"],["/guide","E-Rechnung Guide"],["/api-docs","API Docs"],["/changelog","Changelog"],["/status","Status"]].map(([h,l])=>(
+              {[["/#features","Features"],["/#preise","Preise"],["/guide","E-Rechnung Guide"],["/faq","FAQ"],["/api-docs","API Docs"],["/status","Status"]].map(([h,l])=>(
                 <Link key={h} href={h} className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">{l}</Link>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Unternehmen</h4>
+            <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Trust Center</h4>
             <div className="space-y-2">
-              {[["https://sbsdeutschland.com","SBS Deutschland"],["mailto:ki@sbsdeutschland.de","Kontakt"],["/impressum","Impressum"],["/datenschutz","Datenschutz"],["/agb","AGB"]].map(([h,l])=>(
+              {[["/sicherheit","Sicherheit"],["/compliance","Compliance"],["/avv","AVV"],["/referenzen","Referenzen"],["/datenschutz","Datenschutz"]].map(([h,l])=>(
                 <Link key={h} href={h} className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">{l}</Link>
               ))}
             </div>
@@ -31,9 +31,10 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Starten</h4>
             <div className="space-y-2">
-              <Link href="/register" className="block text-xs text-[#e85d04] hover:text-[#f48c06] font-medium transition">Kostenlos registrieren</Link>
+              <Link href="/kontakt" className="block text-xs text-[#e85d04] hover:text-[#f48c06] font-medium transition">Demo anfragen</Link>
+              <a href="mailto:ki@sbsdeutschland.de" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Vertrieb kontaktieren</a>
+              <Link href="/register" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Kostenlos registrieren</Link>
               <Link href="/login" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Anmelden</Link>
-              <a href="mailto:ki@sbsdeutschland.de" className="block text-xs text-[#525252] hover:text-[#a3a3a3] transition">Demo anfordern</a>
             </div>
           </div>
         </div>

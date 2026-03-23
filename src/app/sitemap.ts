@@ -5,6 +5,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: base, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
     { url: `${base}/guide`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/sicherheit`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/compliance`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/avv`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/referenzen`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/kontakt`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/api-docs`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/changelog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },

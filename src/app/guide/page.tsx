@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import ProcurementCta from "@/components/ProcurementCta";
 
 export const metadata: Metadata = {
   title: "E-Rechnung Guide 2026 — Empfangspflicht, Übergangsfristen, Umsetzung",
@@ -139,6 +140,7 @@ export default function GuidePage() {
           <Link href="/" className="text-sm text-[#e85d04] hover:text-[#f48c06]">← Zurück zur Startseite</Link>
         </div>
       </article>
+      <ProcurementCta />
     </div>
   );
 }

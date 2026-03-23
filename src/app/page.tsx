@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ProcurementCta from "@/components/ProcurementCta";
 
 export default function HomePage() {
   const [countdown, setCountdown] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -31,8 +32,8 @@ export default function HomePage() {
             <span className="text-[22px]" style={{ fontFamily: "'Instrument Serif', serif" }}>BelegFlow AI</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {["Features", "Ablauf", "Preise", "Guide"].map(s => (
-              <a key={s} href={s === "Guide" ? "/guide" : "#" + s.toLowerCase()} className="text-sm text-[#a3a3a3] hover:text-white transition">{s}</a>
+            {["Features", "Ablauf", "Preise", "Guide", "Trust Center"].map(s => (
+              <a key={s} href={s === "Guide" ? "/guide" : s === "Trust Center" ? "/compliance" : "#" + s.toLowerCase()} className="text-sm text-[#a3a3a3] hover:text-white transition">{s}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
@@ -160,6 +161,27 @@ export default function HomePage() {
                   }
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <ProcurementCta />
+
+      <section className="px-6 pb-20">
+        <div className="max-w-[1100px] mx-auto bg-[#111111] border border-white/[0.08] rounded-2xl p-8">
+          <h2 className="text-2xl text-white mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>Trust Center & Beschaffung</h2>
+          <p className="text-sm text-[#a3a3a3] mb-5">Für IT, Datenschutz, Einkauf und CFO: Sicherheitsüberblick, Compliance-Einordnung, AVV-Infos, FAQ und API-Zugang zentral gebündelt.</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["/sicherheit", "Sicherheit"],
+              ["/compliance", "Compliance"],
+              ["/avv", "AVV"],
+              ["/faq", "FAQ"],
+              ["/api-docs", "API / OpenAPI"],
+              ["/kontakt", "Demo anfragen"],
+            ].map(([href, label]) => (
+              <Link key={href} href={href} className="px-4 py-2 rounded-lg border border-[#303030] text-sm text-[#d4d4d4] hover:border-[#e85d04]/60 hover:text-white transition">{label}</Link>
             ))}
           </div>
         </div>
