@@ -40,7 +40,7 @@ function validateLead(input: unknown): { ok: true; value: LeadPayload } | { ok: 
     }
   }
 
-  const email = typeof body.business_email === "string" ? body.business_email.trim() : "";
+  const email = typeof body.business_email === "string" ? body.business_email.trim().toLowerCase() : "";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push("Bitte eine gültige geschäftliche E-Mail-Adresse angeben.");
   }
@@ -126,5 +126,6 @@ export async function POST(request: NextRequest) {
     lead_id: leadId,
     status: handoff.mode === "noop" ? "accepted_noop" : "accepted",
     detail: handoff.detail,
+    handoff: handoff.destinations,
   });
 }

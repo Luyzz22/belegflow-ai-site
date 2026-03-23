@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Reason = "demo" | "kontakt" | "unterlagen" | "api";
 
@@ -61,7 +61,16 @@ export default function LeadForm({ defaultReason = "demo", title, subtitle }: Le
     [],
   );
 
-  const update = (key: string, value: string | boolean) => setForm((prev) => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const reason = new URLSearchParams(window.location.search).get("reason");
+    if (reason && reasonOptions.some((option) => option.value === reason)) {
+      setForm((prev) => ({ ...prev, contact_reason: reason as Reason }));
+    }
+  }, [reasonOptions]);
+
+  const update = (key: string, value: string | boolean) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -104,13 +113,26 @@ export default function LeadForm({ defaultReason = "demo", title, subtitle }: Le
 
   return (
     <div className="bg-[#171717]/60 border border-[#262626] rounded-2xl p-6 sm:p-8">
-      <h2 className="text-2xl text-white mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>{title || "Demo- und Kontaktanfrage"}</h2>
-      <p className="text-sm text-[#a3a3a3] mb-6">{subtitle || "Wir nutzen Ihre Angaben ausschließlich zur Bearbeitung Ihrer geschäftlichen Anfrage. Keine Marketing-Einwilligung erforderlich (DSB prüfen)."}</p>
+      <h2 className="text-2xl text-white mb-2" style={{ fontFamily: "'Instrument Serif', serif" }}>
+        {title || "Demo- und Kontaktanfrage"}
+      </h2>
+      <p className="text-sm text-[#a3a3a3] mb-6">
+        {subtitle ||
+          "Wir nutzen Ihre Angaben ausschließlich zur Bearbeitung Ihrer geschäftlichen Anfrage. Keine Marketing-Einwilligung erforderlich (DSB prüfen)."}
+      </p>
 
-      {success && <p className="mb-4 text-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-lg px-3 py-2">{success}</p>}
-      {error && <p className="mb-4 text-sm bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg px-3 py-2">{error}</p>}
+      <div aria-live="polite" className="space-y-2">
+        {success && (
+          <p className="text-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-lg px-3 py-2">
+            {success}
+          </p>
+        )}
+        {error && (
+          <p className="text-sm bg-red-500/10 border border-red-500/30 text-red-300 rounded-lg px-3 py-2">{error}</p>
+        )}
+      </div>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="text-sm">
             <span className="block mb-1 text-[#d4d4d4]">Name</span>
@@ -127,7 +149,9 @@ export default function LeadForm({ defaultReason = "demo", title, subtitle }: Le
           <label className="text-sm">
             <span className="block mb-1 text-[#d4d4d4]">Kontaktgrund</span>
             <select value={form.contact_reason} onChange={(e) => update("contact_reason", e.target.value)} className="w-full bg-[#0f0f0f] border border-[#404040] rounded-xl px-3 py-2.5 text-sm text-white">
-              {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {reasonOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </label>
           <label className="text-sm">
@@ -171,7 +195,10 @@ export default function LeadForm({ defaultReason = "demo", title, subtitle }: Le
 
         <label className="flex items-start gap-2 text-sm text-[#a3a3a3]">
           <input required type="checkbox" checked={form.consent_contact} onChange={(e) => update("consent_contact", e.target.checked)} className="mt-1" />
-          <span>Ich stimme zu, dass meine Angaben zur Bearbeitung dieser geschäftlichen Anfrage verwendet werden. Weitere Infos in der <a className="text-[#e85d04] hover:text-[#f48c06]" href="/datenschutz">Datenschutzerklärung</a> (DSB prüfen).</span>
+          <span>
+            Ich stimme zu, dass meine Angaben zur Bearbeitung dieser geschäftlichen Anfrage verwendet werden. Weitere Infos in der{" "}
+            <a className="text-[#e85d04] hover:text-[#f48c06]" href="/datenschutz">Datenschutzerklärung</a> (DSB prüfen).
+          </span>
         </label>
 
         <div className="hidden" aria-hidden="true">

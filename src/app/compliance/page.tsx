@@ -45,6 +45,16 @@ export default function CompliancePage() {
           </article>
         </section>
 
+
+        <section className="bg-[#171717]/40 border border-[#262626] rounded-xl p-6">
+          <h2 className="text-lg text-white mb-3" style={{fontFamily:"'Instrument Serif',serif"}}>Pfad nach Rolle</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <Link href="/demo" className="rounded-lg border border-[#303030] p-3 text-[#a3a3a3] hover:border-[#e85d04]/60 hover:text-white transition">CFO/Finance: Demo und Wirtschaftlichkeitsgespräch</Link>
+            <Link href="/guide" className="rounded-lg border border-[#303030] p-3 text-[#a3a3a3] hover:border-[#e85d04]/60 hover:text-white transition">Steuerberatung: DATEV-nahe Abläufe und Prüfspur</Link>
+            <Link href="/kontakt?reason=api" className="rounded-lg border border-[#303030] p-3 text-[#a3a3a3] hover:border-[#e85d04]/60 hover:text-white transition">IT/Einkauf: Technische Rückfrage und Unterlagen</Link>
+          </div>
+        </section>
+
         <section className="border border-[#262626] rounded-xl p-6">
           <h2 className="text-lg text-white mb-3" style={{fontFamily:"'Instrument Serif',serif"}}>Beschaffungs-Shortlist</h2>
           <div className="flex flex-wrap gap-2">
