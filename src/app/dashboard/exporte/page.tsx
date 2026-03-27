@@ -48,7 +48,7 @@ export default function ExportePage() {
             style={{ background: "linear-gradient(135deg, #06b6d4, #0891b2)" }}>
             📄 CSV
           </button>
-          <button onClick={() => downloadFile("/export/datev", "datev-export.csv")}
+          <button onClick={() => downloadFile("/export/datev-zip", "datev-komplett-export.zip")}
             className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl font-medium text-sm text-white transition hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #e85d04, #dc2626)" }}>
             🏛️ DATEV
