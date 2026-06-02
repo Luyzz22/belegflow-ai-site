@@ -1,16 +1,26 @@
 "use client";
-import { useAuth } from "@/lib/useAuth";
+
+import { useAuth } from "@/lib/auth";
+import { Spinner } from "@/components/States";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading || !user) return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <div className="flex gap-1.5">
-        <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-        <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-        <div className="w-3 h-3 bg-[#e85d04] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f7fa]">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner className="h-8 w-8" />
+          <p className="text-sm text-stone-500">Sitzung wird geprüft …</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!user) {
+    // useAuth leitet bereits auf /login um; nichts rendern.
+    return null;
+  }
+
   return <>{children}</>;
 }
