@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/kontakt", priority: 0.6, freq: "monthly" },
     { path: "/login", priority: 0.4, freq: "yearly" },
     { path: "/register", priority: 0.5, freq: "yearly" },
+    { path: "/forgot-password", priority: 0.2, freq: "yearly" },
     { path: "/avv", priority: 0.3, freq: "yearly" },
     { path: "/impressum", priority: 0.3, freq: "yearly" },
     { path: "/datenschutz", priority: 0.3, freq: "yearly" },

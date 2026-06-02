@@ -7,7 +7,6 @@ import {
   getToken,
   clearSession,
   USER_KEY,
-  ApiError,
   type AppUser,
 } from "@/lib/api-client";
 
@@ -15,24 +14,12 @@ interface AuthState {
   user: AppUser | null;
   loading: boolean;
   logout: () => void;
-  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-function readCachedUser(): AppUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const cached = localStorage.getItem(USER_KEY);
-    return cached ? (JSON.parse(cached) as AppUser) : null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Optimistisch aus dem Cache (Lazy-Initializer — kein setState im Effect).
-  const [user, setUser] = useState<AppUser | null>(readCachedUser);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -42,24 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace("/login");
   }, [router]);
 
-  const refresh = useCallback(async () => {
-    try {
-      const me = await flowcheckApi.me();
-      setUser(me);
-      if (typeof window !== "undefined") localStorage.setItem(USER_KEY, JSON.stringify(me));
-    } catch (e) {
-      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) logout();
-    }
-  }, [logout]);
-
+  // Läuft GENAU EINMAL beim Mount. Bewusst leere Dependency-Liste:
+  // weder `user`, `token`, `router` noch `logout` gehören hier hinein,
+  // sonst würde der Effect bei jedem Re-Render neu laufen (→ /me-Endlosschleife).
   useEffect(() => {
-    let active = true;
     const token = getToken();
+
+    // Kein Token → kein API-Call, sofort als „nicht eingeloggt" behandeln.
     if (!token) {
       router.replace("/login");
       return;
     }
-    // Token gegen /me validieren — alle State-Updates laufen asynchron in den Callbacks.
+
+    let active = true;
     flowcheckApi
       .me()
       .then((me) => {
@@ -67,20 +49,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(me);
         if (typeof window !== "undefined") localStorage.setItem(USER_KEY, JSON.stringify(me));
       })
-      .catch((e) => {
-        if (active && e instanceof ApiError && (e.status === 401 || e.status === 403)) logout();
+      .catch(() => {
+        // Token ungültig/abgelaufen (z. B. 401) → Token verwerfen, kein Retry.
+        if (!active) return;
+        clearSession();
+        setUser(null);
+        router.replace("/login");
       })
       .finally(() => {
         if (active) setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [logout, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, loading, logout, refresh }}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

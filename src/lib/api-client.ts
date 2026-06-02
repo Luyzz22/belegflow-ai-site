@@ -211,6 +211,13 @@ export const flowcheckApi = {
     }),
   me: () => api<AppUser>("/me"),
 
+  // Passwort-Reset anfordern
+  requestPasswordReset: (email: string) =>
+    api<{ ok?: boolean; detail?: string }>("/password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   // Dashboard
   kpis: () => api<DashboardKpis>("/dashboard/kpis"),
 
