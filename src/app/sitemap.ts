@@ -1,16 +1,25 @@
-import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://belegflow-ai.de';
-  return [
-    { url: base, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
-    { url: `${base}/guide`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${base}/kontakt`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${base}/api-docs`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${base}/changelog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${base}/status`, lastModified: new Date(), changeFrequency: 'always', priority: 0.5 },
-    { url: `${base}/impressum`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
-    { url: `${base}/datenschutz`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
-    { url: `${base}/agb`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+  const base = "https://belegflow-ai.de";
+  const now = new Date();
+  const routes: { path: string; priority: number; freq: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
+    { path: "", priority: 1, freq: "weekly" },
+    { path: "/preise", priority: 0.9, freq: "monthly" },
+    { path: "/sicherheit", priority: 0.7, freq: "monthly" },
+    { path: "/compliance", priority: 0.7, freq: "monthly" },
+    { path: "/kontakt", priority: 0.6, freq: "monthly" },
+    { path: "/login", priority: 0.4, freq: "yearly" },
+    { path: "/register", priority: 0.5, freq: "yearly" },
+    { path: "/avv", priority: 0.3, freq: "yearly" },
+    { path: "/impressum", priority: 0.3, freq: "yearly" },
+    { path: "/datenschutz", priority: 0.3, freq: "yearly" },
+    { path: "/agb", priority: 0.3, freq: "yearly" },
   ];
+  return routes.map((r) => ({
+    url: `${base}${r.path}`,
+    lastModified: now,
+    changeFrequency: r.freq,
+    priority: r.priority,
+  }));
 }

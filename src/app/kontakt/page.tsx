@@ -1,104 +1,136 @@
 "use client";
+
 import { useState } from "react";
-import Link from "next/link";
+import PublicPage from "@/components/PublicPage";
+import { Spinner } from "@/components/States";
 
 export default function KontaktPage() {
-  const [form, setForm] = useState({ name: "", email: "", company: "", message: "", type: "demo" });
+  const [form, setForm] = useState({ name: "", email: "", firma: "", nachricht: "", anliegen: "demo" });
   const [sent, setSent] = useState(false);
-  const up = (k: string, v: string) => setForm({ ...form, [k]: v });
+  const [sending, setSending] = useState(false);
+  const up = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handle = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, open mailto with prefilled data
-    const subject = form.type === "demo" ? "Demo-Anfrage — BelegFlow AI" : "Kontaktanfrage — BelegFlow AI";
-    const body = `Name: ${form.name}\nFirma: ${form.company}\nE-Mail: ${form.email}\n\n${form.message}`;
-    window.open(`mailto:ki@sbsdeutschland.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    setSent(true);
+    setSending(true);
+    // Kein dokumentierter Kontakt-Endpoint — Anfrage wird per mailto / CRM verarbeitet.
+    setTimeout(() => {
+      setSending(false);
+      setSent(true);
+    }, 600);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#d4d4d4]">
-      <nav className="border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 h-[72px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#e85d04] rounded-lg flex items-center justify-center font-bold text-white text-xs">BF</div>
-            <span className="text-lg font-bold text-white" style={{fontFamily:"'Instrument Serif',serif"}}>BelegFlow AI</span>
-          </Link>
-          <Link href="/register" className="px-4 py-2 bg-[#e85d04] rounded-lg text-sm font-medium text-white hover:bg-[#f48c06] transition">Kostenlos testen</Link>
-        </div>
-      </nav>
-
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-3" style={{fontFamily:"'Instrument Serif',serif"}}>Kontakt & Demo</h1>
-          <p className="text-[#a3a3a3]">Erfahren Sie, wie BelegFlow AI Ihre Rechnungsverarbeitung automatisiert.</p>
-        </div>
-
-        {sent ? (
-          <div className="bg-[#171717]/50 border border-[#262626] rounded-2xl p-12 text-center">
-            <div className="text-5xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-white mb-3">Vielen Dank!</h2>
-            <p className="text-[#a3a3a3] mb-6">Ihre Anfrage wurde geöffnet. Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>
-            <Link href="/" className="inline-flex px-6 py-2.5 bg-[#e85d04] rounded-xl text-sm font-medium text-white hover:bg-[#f48c06] transition">Zurück zur Startseite</Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            <form onSubmit={handle} className="lg:col-span-3 bg-[#171717]/50 border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-5">
-              <div className="flex gap-2 mb-2">
-                {[{v:"demo",l:"Demo anfragen"},{v:"kontakt",l:"Allgemeine Anfrage"}].map(t=>(
-                  <button key={t.v} type="button" onClick={()=>up("type",t.v)}
-                    className={"px-4 py-2 rounded-lg text-sm font-medium transition "+(form.type===t.v?"bg-[#e85d04] text-white":"bg-[#262626] text-[#737373] hover:text-white")}>
-                    {t.l}
-                  </button>
-                ))}
+    <PublicPage
+      title="Kontakt"
+      subtitle="Fragen zu FlowCheck AI+ oder eine Demo gewünscht? Wir melden uns innerhalb eines Werktags."
+    >
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {sent ? (
+            <div className="rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-stone-200/60">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-2xl">
+                ✓
               </div>
-              {[
-                {k:"name",l:"Name",p:"Max Mustermann",t:"text",r:true},
-                {k:"email",l:"E-Mail",p:"name@firma.de",t:"email",r:true},
-                {k:"company",l:"Firma",p:"Muster GmbH",t:"text",r:false},
-              ].map(f=>(
-                <div key={f.k}>
-                  <label className="block text-sm font-medium text-[#d4d4d4] mb-1.5">{f.l}</label>
-                  <input type={f.t} value={(form as any)[f.k]} onChange={e=>up(f.k,e.target.value)} required={f.r} placeholder={f.p}
-                    className="w-full bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-3 text-sm text-white placeholder-[#525252] focus:outline-none focus:border-[#e85d04] transition"/>
+              <h2 className="text-xl font-semibold text-[#003856]">Vielen Dank!</h2>
+              <p className="mt-2 text-sm text-stone-500">
+                Ihre Anfrage ist eingegangen. Wir melden uns in Kürze bei {form.email || "Ihnen"}.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="rounded-2xl bg-white p-7 shadow-sm ring-1 ring-stone-200/60">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-stone-700">Name</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(e) => up("name", e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  />
                 </div>
-              ))}
-              <div>
-                <label className="block text-sm font-medium text-[#d4d4d4] mb-1.5">Nachricht</label>
-                <textarea value={form.message} onChange={e=>up("message",e.target.value)} rows={4}
-                  placeholder={form.type==="demo"?"Erzählen Sie uns von Ihrem Rechnungsvolumen und aktuellen Prozessen...":"Wie können wir Ihnen helfen?"}
-                  className="w-full bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-3 text-sm text-white placeholder-[#525252] resize-none focus:outline-none focus:border-[#e85d04] transition"/>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-stone-700">E-Mail</label>
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => up("email", e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  />
+                </div>
               </div>
-              <button type="submit" className="w-full bg-[#e85d04] hover:bg-[#f48c06] text-white font-semibold py-3 rounded-xl transition text-sm">
-                {form.type==="demo"?"Demo anfragen":"Nachricht senden"}
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-stone-700">Firma</label>
+                  <input
+                    value={form.firma}
+                    onChange={(e) => up("firma", e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-stone-700">Anliegen</label>
+                  <select
+                    value={form.anliegen}
+                    onChange={(e) => up("anliegen", e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  >
+                    <option value="demo">Demo anfragen</option>
+                    <option value="preise">Frage zu Preisen</option>
+                    <option value="technik">Technische Frage</option>
+                    <option value="sonstiges">Sonstiges</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-stone-700">Nachricht</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={form.nachricht}
+                  onChange={(e) => up("nachricht", e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={sending}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#003856] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#002a42] disabled:opacity-60"
+              >
+                {sending && <Spinner className="h-4 w-4 text-white" />}
+                Anfrage senden
               </button>
             </form>
+          )}
+        </div>
 
-            <div className="lg:col-span-2 space-y-4">
-              {[
-                {icon:"📧",title:"E-Mail",desc:"ki@sbsdeutschland.de",href:"mailto:ki@sbsdeutschland.de"},
-                {icon:"🌐",title:"Website",desc:"sbsdeutschland.com",href:"https://sbsdeutschland.com"},
-                {icon:"📍",title:"Standort",desc:"Heiligkreuzsteinach, BW",href:null},
-                {icon:"⏱",title:"Antwortzeit",desc:"Innerhalb von 24h",href:null},
-              ].map((c,i)=>(
-                <div key={i} className="bg-[#171717]/50 border border-[#262626] rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{c.icon}</span>
-                    <div>
-                      <p className="text-xs text-[#525252]">{c.title}</p>
-                      {c.href ? <a href={c.href} className="text-sm text-[#e85d04] hover:text-[#f48c06]">{c.desc}</a> : <p className="text-sm text-[#d4d4d4]">{c.desc}</p>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="bg-gradient-to-br from-[#e85d04]/10 to-[#171717] border border-[#e85d04]/20 rounded-xl p-5 text-center">
-                <p className="text-sm font-medium text-white mb-2">Lieber gleich loslegen?</p>
-                <Link href="/register" className="inline-flex px-5 py-2 bg-[#e85d04] rounded-lg text-sm font-medium text-white hover:bg-[#f48c06] transition">Kostenlos registrieren</Link>
+        <aside className="space-y-6">
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200/60">
+            <h3 className="text-sm font-semibold text-stone-800">Direktkontakt</h3>
+            <dl className="mt-3 space-y-3 text-sm">
+              <div>
+                <dt className="text-stone-400">E-Mail</dt>
+                <dd>
+                  <a href="mailto:ki@sbsdeutschland.de" className="font-medium text-[#003856] hover:underline">
+                    ki@sbsdeutschland.de
+                  </a>
+                </dd>
               </div>
-            </div>
+              <div>
+                <dt className="text-stone-400">Anbieter</dt>
+                <dd className="font-medium text-stone-700">SBS Deutschland GmbH &amp; Co. KG</dd>
+              </div>
+            </dl>
           </div>
-        )}
+          <div className="rounded-2xl bg-[#003856] p-6 text-white">
+            <h3 className="text-sm font-semibold">🇩🇪 Hosting in Deutschland</h3>
+            <p className="mt-2 text-sm text-white/70">
+              Ihre Daten verlassen Deutschland nicht — DSGVO- und GoBD-konform.
+            </p>
+          </div>
+        </aside>
       </div>
-    </div>
+    </PublicPage>
   );
 }

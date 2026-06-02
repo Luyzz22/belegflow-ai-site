@@ -1,67 +1,122 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
-
-const API = "https://app.sbsdeutschland.com/api/erechnung";
+import { useRouter } from "next/navigation";
+import { flowcheckApi, setSession } from "@/lib/api-client";
+import { BrandLink } from "@/components/Brand";
+import { Spinner } from "@/components/States";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: "", email: "", password: "", company: "" });
-  const [error, setError] = useState("");
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const up = (k: string, v: string) => setForm({ ...form, [k]: v });
+  const [error, setError] = useState<string | null>(null);
 
-  const handle = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    if (form.password.length < 8) { setError("Passwort muss mindestens 8 Zeichen lang sein"); return; }
+    if (!accepted) {
+      setError("Bitte akzeptieren Sie AGB und Datenschutzerklärung.");
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(API + "/users/register", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "Registrierung fehlgeschlagen"); }
-      const d = await res.json();
-      localStorage.setItem("bf_token", d.tokens.access_token);
-      localStorage.setItem("bf_refresh", d.tokens.refresh_token);
-      localStorage.setItem("bf_user", JSON.stringify(d.user));
-      window.location.href = "/dashboard";
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+      const res = await flowcheckApi.register(email, password, name);
+      setSession(res.token, res.user);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registrierung fehlgeschlagen");
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-10 h-10 bg-[#e85d04] rounded-xl flex items-center justify-center font-bold text-white text-sm">BF</div>
-            <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>BelegFlow AI</span>
-          </Link>
-          <h1 className="text-2xl font-bold text-white">Konto erstellen</h1>
-          <p className="text-[#a3a3a3] mt-2 text-sm">Starten Sie mit der KI-Rechnungsverarbeitung</p>
-        </div>
-        <form onSubmit={handle} className="bg-[#171717]/50 border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-4">
-          {error && <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">{error}</div>}
-          {[
-            { k: "name", l: "Name", p: "Max Mustermann", t: "text", r: true },
-            { k: "company", l: "Firma", p: "Muster GmbH (optional)", t: "text", r: false },
-            { k: "email", l: "E-Mail", p: "name@unternehmen.de", t: "email", r: true },
-            { k: "password", l: "Passwort", p: "Mindestens 8 Zeichen", t: "password", r: true },
-          ].map(f => (
-            <div key={f.k}>
-              <label className="block text-sm font-medium text-[#d4d4d4] mb-1.5">{f.l}</label>
-              <input type={f.t} value={(form as any)[f.k]} onChange={e => up(f.k, e.target.value)} required={f.r} placeholder={f.p}
-                className="w-full bg-[#0f0f0f] border border-[#404040] rounded-xl px-4 py-3 text-white placeholder-[#525252] text-sm focus:outline-none focus:border-[#e85d04] focus:ring-1 focus:ring-[#e85d04] transition" />
-            </div>
-          ))}
-          <button type="submit" disabled={loading}
-            className="w-full bg-[#e85d04] hover:bg-[#f48c06] text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 text-sm">
-            {loading ? "Wird erstellt..." : "Kostenlos registrieren"}
-          </button>
-          <p className="text-sm text-[#525252] text-center">
-            Bereits registriert? <Link href="/login" className="text-[#f48c06] hover:text-[#e85d04] font-medium">Anmelden</Link>
+    <div className="flex min-h-screen flex-col bg-[#f4f7fa]">
+      <div className="flex h-16 items-center px-6">
+        <BrandLink />
+      </div>
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-stone-200/60">
+            <h1 className="text-2xl font-semibold tracking-tight text-[#003856]">Konto erstellen</h1>
+            <p className="mt-1 text-sm text-stone-500">30 Tage kostenlos testen — keine Kreditkarte nötig.</p>
+
+            {error && (
+              <div className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={submit} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-stone-700">Name</label>
+                <input
+                  required
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  placeholder="Max Mustermann"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-stone-700">E-Mail</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  placeholder="name@firma.de"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-stone-700">Passwort</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  placeholder="Mindestens 8 Zeichen"
+                />
+              </div>
+              <label className="flex items-start gap-2.5 text-sm text-stone-600">
+                <input
+                  type="checkbox"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#003856] focus:ring-[#003856]"
+                />
+                <span>
+                  Ich akzeptiere die{" "}
+                  <Link href="/agb" className="text-[#003856] hover:underline">AGB</Link> und die{" "}
+                  <Link href="/datenschutz" className="text-[#003856] hover:underline">Datenschutzerklärung</Link>.
+                </span>
+              </label>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#003856] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#002a42] disabled:opacity-60"
+              >
+                {loading && <Spinner className="h-4 w-4 text-white" />}
+                {loading ? "Konto wird erstellt …" : "Kostenlos starten"}
+              </button>
+            </form>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-stone-500">
+            Bereits registriert?{" "}
+            <Link href="/login" className="font-medium text-[#003856] hover:underline">
+              Anmelden
+            </Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );
