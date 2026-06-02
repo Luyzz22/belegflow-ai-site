@@ -1,10 +1,14 @@
 // src/lib/api-client.ts
 // Zentraler API-Client für FlowCheck AI+
 // Quelle der Wahrheit: FRONTEND_API.md
-// BASE_URL: https://erechnung.sbsdeutschland.com/api/app
+//
+// Standardmäßig wird der Same-Origin-Pfad "/api/app" verwendet. Dieser wird in
+// next.config.mjs serverseitig an https://erechnung.sbsdeutschland.com/api/app
+// weitergeleitet (Rewrite-Proxy) — dadurch entfällt jegliches CORS im Browser.
+// Für direkte Backend-Calls kann NEXT_PUBLIC_API_URL gesetzt werden (dann ist
+// aber eine passende CORS-Konfiguration im Backend nötig).
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://erechnung.sbsdeutschland.com/api/app";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/app";
 
 export const TOKEN_KEY = "flowcheck_token";
 export const USER_KEY = "flowcheck_user";
