@@ -18,6 +18,14 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+// Auf diesen Seiten darf NIE zu /login umgeleitet werden (sonst Redirect-Schleife).
+const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
+
+function isAuthPage(): boolean {
+  if (typeof window === "undefined") return false;
+  return AUTH_PATHS.includes(window.location.pathname);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,42 +34,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     clearSession();
     setUser(null);
-    router.replace("/login");
+    if (!isAuthPage()) router.replace("/login");
   }, [router]);
 
   // Läuft GENAU EINMAL beim Mount. Bewusst leere Dependency-Liste:
   // weder `user`, `token`, `router` noch `logout` gehören hier hinein,
   // sonst würde der Effect bei jedem Re-Render neu laufen (→ /me-Endlosschleife).
   useEffect(() => {
+    let cancelled = false;
     const token = getToken();
+    const onAuthPage = isAuthPage();
 
-    // Kein Token → kein API-Call, sofort als „nicht eingeloggt" behandeln.
+    // Kein Token → kein API-Call. Auf Auth-Seiten NICHT umleiten (verhindert Schleife).
     if (!token) {
-      router.replace("/login");
-      return;
+      if (!onAuthPage) router.replace("/login");
+      // setState asynchron, damit kein synchroner setState im Effect erfolgt (Lint/Render-Sicherheit).
+      Promise.resolve().then(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
-    let active = true;
+    // Token vorhanden → genau EIN /me-Aufruf.
     flowcheckApi
       .me()
       .then((me) => {
-        if (!active) return;
+        if (cancelled) return;
         setUser(me);
         if (typeof window !== "undefined") localStorage.setItem(USER_KEY, JSON.stringify(me));
       })
       .catch(() => {
-        // Token ungültig/abgelaufen (z. B. 401) → Token verwerfen, kein Retry.
-        if (!active) return;
+        // Token ungültig/abgelaufen (z. B. 401) → verwerfen, kein Retry.
+        if (cancelled) return;
         clearSession();
         setUser(null);
-        router.replace("/login");
+        if (!onAuthPage) router.replace("/login");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!cancelled) setLoading(false);
       });
 
     return () => {
-      active = false;
+      cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
