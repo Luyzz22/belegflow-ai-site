@@ -1,16 +1,17 @@
 {
-  "name": "BelegFlow AI",
-  "short_name": "BelegFlow",
-  "description": "KI-gestützte E-Rechnungsverarbeitung für den deutschen Mittelstand",
+  "name": "FlowCheck AI+",
+  "short_name": "FlowCheck",
+  "description": "KI-native Rechnungsverarbeitung für den deutschen Mittelstand",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#e85d04",
+  "background_color": "#f4f7fa",
+  "theme_color": "#003856",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%23e85d04'/><text x='50%25' y='55%25' font-size='256' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif'>BF</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%23003856'/><path d='M150 360V160h170M150 264h130' stroke='%23c8985a' stroke-width='40' fill='none' stroke-linecap='round'/></svg>",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

@@ -1,13 +1,52 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bf-accent: #e85d04;
-  --color-bf-accent-light: #f48c06;
-  --font-serif: 'Instrument Serif', Georgia, serif;
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* FlowCheck AI+ — SBS Design System */
+  --color-primary: #003856;        /* SBS Blue */
+  --color-primary-dark: #002a42;
+  --color-primary-light: #0a4d70;
+  --color-accent: #c8985a;         /* Warm Gold */
+  --color-accent-dark: #b07f42;
+  --color-bg: #f4f7fa;             /* Light Stone */
+  --color-surface: #ffffff;
+  --color-ink: #1a1a2e;            /* Dark text */
+  --color-muted: #6b7280;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  background-color: var(--color-bg);
 }
 
 body {
   font-family: var(--font-sans);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Thin, neutral scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes fc-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fc-fade-in { animation: fc-fade-in 0.4s ease both; }
+
+@keyframes fc-shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+.fc-skeleton {
+  background: linear-gradient(90deg, #eef2f6 25%, #e2e8f0 37%, #eef2f6 63%);
+  background-size: 800px 100%;
+  animation: fc-shimmer 1.4s ease infinite;
 }

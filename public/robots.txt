@@ -1,6 +1,13 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard/
-Disallow: /api/
+Disallow: /dashboard
+Disallow: /upload
+Disallow: /rechnungen
+Disallow: /freigaben
+Disallow: /lieferanten
+Disallow: /export
+Disallow: /audit
+Disallow: /einstellungen
+Disallow: /profil
 
 Sitemap: https://belegflow-ai.de/sitemap.xml
