@@ -20,9 +20,15 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await flowcheckApi.login(email, password);
-      setSession(res.token, res.user);
-      router.replace("/dashboard");
+      console.log("[Login] API response:", res);
+      // Backend may return "token" or "access_token"
+      const token = res.token ?? (res as unknown as Record<string, string>)["access_token"];
+      console.log("[Login] token extracted:", token ? token.slice(0, 20) + "…" : "MISSING");
+      if (!token) throw new Error("Kein Token in der Serverantwort");
+      setSession(token, res.user);
+      router.push("/dashboard");
     } catch (err) {
+      console.error("[Login] error:", err);
       setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
       setLoading(false);
     }
