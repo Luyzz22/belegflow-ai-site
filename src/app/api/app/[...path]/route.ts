@@ -1,51 +1,55 @@
 // Same-Origin-Proxy als Catch-All Route Handler.
 //
-// Ersetzt den früheren next.config.mjs-Rewrite. Grund: Der Rewrite hat den
-// Authorization-Header NICHT zuverlässig an das Backend weitergeleitet →
-// /api/app/me lieferte trotz gültigem Token einen 401. Dieser Handler leitet
-// ALLE eingehenden Header (inkl. Authorization) sowie den Request-Body
-// unverändert an das FastAPI-Backend weiter. Der Browser spricht ausschließlich
-// die eigene Origin an → kein CORS.
+// Leitet Anfragen von /api/app/* serverseitig an das FastAPI-Backend weiter.
+// Nur die für das Backend relevanten Header werden weitergeleitet (Authorization,
+// Content-Type). Alle Browser- und Vercel-spezifischen Headers (cookie, host,
+// x-forwarded-*, …) werden bewusst NICHT weitergeleitet, um Interferenzen zu
+// vermeiden. accept-encoding: identity verhindert komprimierte Antworten, die
+// wir bytegenau durchreichen müssten.
 
-// Hinweis: BACKEND_API_URL enthält wie bisher den "/api/app"-Suffix.
 const BACKEND_API_URL =
   process.env.BACKEND_API_URL || "https://erechnung.sbsdeutschland.com/api/app";
-
-// Hop-by-hop / vom Proxy selbst zu setzende Header nicht durchreichen.
-const STRIP_REQUEST_HEADERS = ["host", "connection", "content-length"];
 
 async function handler(
   req: Request,
   ctx: { params: Promise<{ path: string[] }> },
 ): Promise<Response> {
   const { path } = await ctx.params;
-  const subpath = Array.isArray(path) ? path.join("/") : "";
-  const search = new URL(req.url).search;
+  const subpath = path.join("/");
+  const { search } = new URL(req.url);
   const target = `${BACKEND_API_URL}/${subpath}${search}`;
 
-  // Eingehende Header 1:1 übernehmen (Authorization, Content-Type-Boundary …).
-  const headers = new Headers(req.headers);
-  for (const h of STRIP_REQUEST_HEADERS) headers.delete(h);
+  // Nur die Header weitergeben, die das Backend braucht.
+  const outHeaders: Record<string, string> = {
+    "accept-encoding": "identity", // unkomprimierte Antwort → kein Content-Encoding-Problem
+    accept: "application/json",
+  };
+
+  const contentType = req.headers.get("content-type");
+  if (contentType) outHeaders["content-type"] = contentType;
+
+  const authorization = req.headers.get("authorization");
+  if (authorization) outHeaders["authorization"] = authorization;
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
   const body = hasBody ? await req.arrayBuffer() : undefined;
 
   const res = await fetch(target, {
     method: req.method,
-    headers,
+    headers: outHeaders,
     body,
-    redirect: "manual",
+    cache: "no-store",
   });
 
-  // Antwort durchreichen. Content-Type erhalten, damit JSON korrekt geparst wird.
   const resBody = await res.arrayBuffer();
-  const responseHeaders = new Headers();
+  const resHeaders = new Headers();
+
   const ct = res.headers.get("content-type");
-  if (ct) responseHeaders.set("content-type", ct);
+  if (ct) resHeaders.set("content-type", ct);
 
   return new Response(resBody, {
     status: res.status,
-    headers: responseHeaders,
+    headers: resHeaders,
   });
 }
 
@@ -55,5 +59,4 @@ export const PUT = handler;
 export const PATCH = handler;
 export const DELETE = handler;
 
-// Dynamisch erzwingen — niemals zur Build-Zeit cachen.
 export const dynamic = "force-dynamic";
