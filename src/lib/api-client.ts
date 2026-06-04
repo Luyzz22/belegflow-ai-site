@@ -40,6 +40,17 @@ export class ApiError extends Error {
   }
 }
 
+const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
+
+/** 401 → Session verwerfen und (außerhalb der Auth-Seiten) zum Login schicken. */
+function handleUnauthorized() {
+  if (typeof window === "undefined") return;
+  clearSession();
+  if (!AUTH_PATHS.includes(window.location.pathname)) {
+    window.location.href = "/login";
+  }
+}
+
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -52,6 +63,7 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
     const err = await res.json().catch(() => ({ detail: "Unbekannter Fehler" }));
     throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
   }

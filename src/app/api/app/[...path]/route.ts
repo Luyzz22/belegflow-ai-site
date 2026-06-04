@@ -1,62 +1,58 @@
-// Same-Origin-Proxy als Catch-All Route Handler.
+// Same-Origin-Proxy für /api/app/* → FastAPI-Backend.
 //
-// Leitet Anfragen von /api/app/* serverseitig an das FastAPI-Backend weiter.
-// Nur die für das Backend relevanten Header werden weitergeleitet (Authorization,
-// Content-Type). Alle Browser- und Vercel-spezifischen Headers (cookie, host,
-// x-forwarded-*, …) werden bewusst NICHT weitergeleitet, um Interferenzen zu
-// vermeiden. accept-encoding: identity verhindert komprimierte Antworten, die
-// wir bytegenau durchreichen müssten.
+// Komplett neu aufgebaut. Leitet AUSSCHLIESSLICH Authorization + Content-Type
+// an das Backend weiter. Debug-Logs zeigen in den Server-Logs (Vercel Functions),
+// ob der Authorization-Header tatsächlich ankommt.
 
-const BACKEND_API_URL =
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const BACKEND =
   process.env.BACKEND_API_URL || "https://erechnung.sbsdeutschland.com/api/app";
 
-async function handler(
-  req: Request,
-  ctx: { params: Promise<{ path: string[] }> },
-): Promise<Response> {
-  const { path } = await ctx.params;
-  const subpath = path.join("/");
-  const { search } = new URL(req.url);
-  const target = `${BACKEND_API_URL}/${subpath}${search}`;
+async function proxyHandler(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  // /api/app/login → /login (BACKEND enthält bereits den /api/app-Teil)
+  const backendPath = url.pathname.replace(/^\/api\/app/, "");
+  const target = `${BACKEND}${backendPath}${url.search}`;
 
-  // Nur die Header weitergeben, die das Backend braucht.
-  const outHeaders: Record<string, string> = {
-    "accept-encoding": "identity", // unkomprimierte Antwort → kein Content-Encoding-Problem
-    accept: "application/json",
-  };
+  // NUR diese beiden Header weiterleiten.
+  const headers: Record<string, string> = {};
 
-  const contentType = req.headers.get("content-type");
-  if (contentType) outHeaders["content-type"] = contentType;
+  const auth = req.headers.get("authorization");
+  if (auth) headers["Authorization"] = auth;
 
-  const authorization = req.headers.get("authorization");
-  if (authorization) outHeaders["authorization"] = authorization;
+  const ct = req.headers.get("content-type");
+  if (ct) headers["Content-Type"] = ct;
 
-  const hasBody = req.method !== "GET" && req.method !== "HEAD";
-  const body = hasBody ? await req.arrayBuffer() : undefined;
+  // DEBUG: Kommt der Authorization-Header an?
+  console.log(`[PROXY] ${req.method} ${target} auth=${auth ? "Bearer..." : "NONE"}`);
 
-  const res = await fetch(target, {
+  let body: string | undefined;
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    body = await req.text();
+  }
+
+  const backendRes = await fetch(target, {
     method: req.method,
-    headers: outHeaders,
+    headers,
     body,
     cache: "no-store",
   });
 
-  const resBody = await res.arrayBuffer();
-  const resHeaders = new Headers();
+  const responseText = await backendRes.text();
+  console.log(`[PROXY] Response: ${backendRes.status}`);
 
-  const ct = res.headers.get("content-type");
-  if (ct) resHeaders.set("content-type", ct);
-
-  return new Response(resBody, {
-    status: res.status,
-    headers: resHeaders,
+  return new Response(responseText, {
+    status: backendRes.status,
+    headers: {
+      "Content-Type": backendRes.headers.get("content-type") || "application/json",
+    },
   });
 }
 
-export const GET = handler;
-export const POST = handler;
-export const PUT = handler;
-export const PATCH = handler;
-export const DELETE = handler;
-
-export const dynamic = "force-dynamic";
+export const GET = proxyHandler;
+export const POST = proxyHandler;
+export const PUT = proxyHandler;
+export const DELETE = proxyHandler;
+export const PATCH = proxyHandler;

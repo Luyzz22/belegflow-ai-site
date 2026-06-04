@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { flowcheckApi, setSession } from "@/lib/api-client";
 import { BrandLink } from "@/components/Brand";
 import { Spinner } from "@/components/States";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,14 +16,27 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await flowcheckApi.login(email, password);
-      console.log("[Login] API response:", res);
-      // Backend may return "token" or "access_token"
-      const token = res.token ?? (res as unknown as Record<string, string>)["access_token"];
-      console.log("[Login] token extracted:", token ? token.slice(0, 20) + "…" : "MISSING");
+      const res = await fetch("/api/app/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      console.log("[Login] status:", res.status, "data:", data);
+
+      if (!res.ok) {
+        throw new Error(data.detail || "E-Mail oder Passwort falsch");
+      }
+
+      const token: string | undefined = data.token ?? data.access_token;
       if (!token) throw new Error("Kein Token in der Serverantwort");
-      setSession(token, res.user);
-      router.push("/dashboard");
+
+      localStorage.setItem("flowcheck_token", token);
+      if (data.user) localStorage.setItem("flowcheck_user", JSON.stringify(data.user));
+
+      // HARTER Redirect — frischer Page-Load, AuthProvider liest Token neu.
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("[Login] error:", err);
       setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
