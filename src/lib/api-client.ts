@@ -91,12 +91,14 @@ async function upload<T>(path: string, formData: FormData): Promise<T> {
 
 // ───────────────────────────── Typen ─────────────────────────────
 
-export type Role = "admin" | "buchhalter" | "freigeber" | "viewer" | string;
+// Das Backend liefert aktuell ausschließlich "admin" oder "user".
+export type Role = "admin" | "user" | string;
 
 export interface AppUser {
   id: number | string;
   email: string;
-  name: string;
+  // /me liefert KEINEN Namen (nur /login). Daher optional.
+  name?: string;
   role: Role;
   tenant_id?: string;
 }

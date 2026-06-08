@@ -20,6 +20,7 @@ const NAV: { href: string; label: string; icon: string }[] = [
 function roleLabel(role?: string) {
   const map: Record<string, string> = {
     admin: "Administrator",
+    user: "Benutzer",
     buchhalter: "Buchhaltung",
     freigeber: "Freigeber",
     viewer: "Leser",

@@ -23,7 +23,6 @@ export default function LoginPage() {
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log("[Login] status:", res.status, "data:", data);
 
       if (!res.ok) {
         throw new Error(data.detail || "E-Mail oder Passwort falsch");
@@ -38,7 +37,6 @@ export default function LoginPage() {
       // HARTER Redirect — frischer Page-Load, AuthProvider liest Token neu.
       window.location.href = "/dashboard";
     } catch (err) {
-      console.error("[Login] error:", err);
       setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
       setLoading(false);
     }

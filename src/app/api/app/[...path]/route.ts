@@ -1,8 +1,7 @@
 // Same-Origin-Proxy für /api/app/* → FastAPI-Backend.
 //
-// Komplett neu aufgebaut. Leitet AUSSCHLIESSLICH Authorization + Content-Type
-// an das Backend weiter. Debug-Logs zeigen in den Server-Logs (Vercel Functions),
-// ob der Authorization-Header tatsächlich ankommt.
+// Leitet AUSSCHLIESSLICH Authorization + Content-Type an das Backend weiter.
+// Der Browser spricht ausschließlich die eigene Origin an → kein CORS.
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,9 +24,6 @@ async function proxyHandler(req: Request): Promise<Response> {
   const ct = req.headers.get("content-type");
   if (ct) headers["Content-Type"] = ct;
 
-  // DEBUG: Kommt der Authorization-Header an?
-  console.log(`[PROXY] ${req.method} ${target} auth=${auth ? "Bearer..." : "NONE"}`);
-
   let body: string | undefined;
   if (req.method !== "GET" && req.method !== "HEAD") {
     body = await req.text();
@@ -41,7 +37,6 @@ async function proxyHandler(req: Request): Promise<Response> {
   });
 
   const responseText = await backendRes.text();
-  console.log(`[PROXY] Response: ${backendRes.status}`);
 
   return new Response(responseText, {
     status: backendRes.status,

@@ -37,7 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error(String(res.status));
         return res.json();
       })
-      .then((data: AppUser) => setUser(data))
+      .then((me: AppUser) => {
+        // /me liefert keinen Namen — fehlenden Namen aus dem beim Login
+        // gespeicherten User ergänzen, damit Sidebar/Profil ihn anzeigen.
+        let stored: Partial<AppUser> = {};
+        try {
+          const raw = localStorage.getItem("flowcheck_user");
+          if (raw) stored = JSON.parse(raw) as Partial<AppUser>;
+        } catch {
+          stored = {};
+        }
+        setUser({ name: stored.name, ...me });
+      })
       .catch(() => {
         localStorage.removeItem("flowcheck_token");
         localStorage.removeItem("flowcheck_user");

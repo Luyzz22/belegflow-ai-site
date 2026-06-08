@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/States";
 function roleLabel(role?: string) {
   const map: Record<string, string> = {
     admin: "Administrator",
+    user: "Benutzer",
     buchhalter: "Buchhaltung",
     freigeber: "Freigeber",
     viewer: "Leser",
@@ -29,7 +30,7 @@ export default function ProfilPage() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#003856] text-2xl font-semibold text-white">
               {(user.name || "?").slice(0, 1).toUpperCase()}
             </div>
-            <p className="mt-3 text-lg font-semibold text-stone-800">{user.name}</p>
+            <p className="mt-3 text-lg font-semibold text-stone-800">{user.name || "—"}</p>
             <p className="text-sm text-stone-500">{user.email}</p>
             <span className="mt-2 rounded-md bg-[#c8985a]/15 px-2 py-0.5 text-xs font-semibold text-[#8a6526]">
               {roleLabel(user.role)}
@@ -41,7 +42,7 @@ export default function ProfilPage() {
           <h2 className="mb-4 text-sm font-semibold text-stone-800">Kontodetails</h2>
           <dl className="divide-y divide-stone-100">
             {[
-              ["Name", user.name],
+              ["Name", user.name || "—"],
               ["E-Mail", user.email],
               ["Rolle", roleLabel(user.role)],
               ["Benutzer-ID", String(user.id)],
