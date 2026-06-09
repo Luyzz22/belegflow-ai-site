@@ -73,20 +73,17 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-/** Datei-Upload (multipart/form-data) — KEIN JSON-Content-Type setzen. */
-async function upload<T>(path: string, formData: FormData): Promise<T> {
+/** Einzel-Datei-Upload (multipart/form-data) — Feldname "file", KEIN JSON-Content-Type
+ *  (der Browser setzt multipart/form-data inkl. Boundary automatisch). */
+async function uploadFile(path: string, file: File): Promise<Response> {
   const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: formData,
+    body: fd,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Unbekannter Fehler" }));
-    throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
-  }
-  const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 // ───────────────────────────── Typen ─────────────────────────────
@@ -243,12 +240,32 @@ export const flowcheckApi = {
   invoices: (params?: string) => api<InvoiceList>(`/invoices${params ? `?${params}` : ""}`),
   invoice: (id: number) => api<InvoiceDetail>(`/invoices/${id}`),
 
-  // Upload (multipart) — Endpoint laut Design-Prompt
-  upload: (files: File[]) => {
-    const fd = new FormData();
-    files.forEach((f) => fd.append("files", f));
-    return upload<UploadResult[]>("/upload", fd);
-  },
+  // Upload (multipart) — Backend erwartet EIN Feld "file" pro Request.
+  // Mehrere Dateien werden parallel als Einzel-Requests hochgeladen; Fehler
+  // werden pro Datei zurückgegeben (kein Throw), damit die UI sie einzeln zeigt.
+  upload: (files: File[]): Promise<UploadResult[]> =>
+    Promise.all(
+      files.map(async (file): Promise<UploadResult> => {
+        try {
+          const res = await uploadFile("/upload", file);
+          if (!res.ok) {
+            if (res.status === 401) handleUnauthorized();
+            const err: { detail?: string; error?: string } = await res
+              .json()
+              .catch(() => ({}));
+            return {
+              filename: file.name,
+              status: "error",
+              detail: err.detail || err.error || `HTTP ${res.status}`,
+            };
+          }
+          const data: { id?: number; detail?: string } = await res.json().catch(() => ({}));
+          return { filename: file.name, status: "ok", id: data.id, detail: data.detail };
+        } catch {
+          return { filename: file.name, status: "error", detail: "Netzwerkfehler beim Upload" };
+        }
+      })
+    ),
 
   // Freigaben
   freigaben: () => api<{ items: Freigabe[] }>("/freigaben"),

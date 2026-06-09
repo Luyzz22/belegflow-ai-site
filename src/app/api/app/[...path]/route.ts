@@ -24,10 +24,11 @@ async function proxyHandler(req: Request): Promise<Response> {
   const ct = req.headers.get("content-type");
   if (ct) headers["Content-Type"] = ct;
 
-  let body: string | undefined;
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    body = await req.text();
-  }
+  // Roh-Body als Bytes weiterleiten (NICHT als Text parsen) — sonst werden
+  // multipart/binary-Uploads (PDF, Bilder) zerstört. arrayBuffer() erhält die
+  // exakten Bytes inkl. multipart-Boundary.
+  const body =
+    req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
 
   const backendRes = await fetch(target, {
     method: req.method,
@@ -36,9 +37,11 @@ async function proxyHandler(req: Request): Promise<Response> {
     cache: "no-store",
   });
 
-  const responseText = await backendRes.text();
+  // Antwort ebenfalls als Bytes durchreichen (funktioniert für JSON wie für
+  // Datei-Downloads, z. B. DATEV-CSV).
+  const responseBody = await backendRes.arrayBuffer();
 
-  return new Response(responseText, {
+  return new Response(responseBody, {
     status: backendRes.status,
     headers: {
       "Content-Type": backendRes.headers.get("content-type") || "application/json",
