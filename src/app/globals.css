@@ -1,16 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* FlowCheck AI+ — SBS Design System */
-  --color-primary: #003856;        /* SBS Blue */
+  /* FlowCheck AI+ — SBS Design System (Enterprise) */
+  --color-primary: #003856;          /* SBS Deep Blue */
   --color-primary-dark: #002a42;
   --color-primary-light: #0a4d70;
-  --color-accent: #c8985a;         /* Warm Gold */
+  --color-accent: #c8985a;           /* Warm Gold */
   --color-accent-dark: #b07f42;
-  --color-bg: #f4f7fa;             /* Light Stone */
+  --color-cta: #ffb900;              /* Bright Yellow — nur primäre CTAs */
+  --color-cta-dark: #e6a800;
+  --color-bg: #f8f6f3;               /* Warm Stone Background */
   --color-surface: #ffffff;
-  --color-ink: #1a1a2e;            /* Dark text */
-  --color-muted: #6b7280;
+  --color-surface-elevated: #faf9f7;
+  --color-ink: #1a1a2e;              /* Text */
+  --color-ink-secondary: #64748b;    /* Text secondary */
+  --color-muted: #64748b;
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -29,24 +33,46 @@ body {
 /* Thin, neutral scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #d6cfc4 transparent;
 }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+*::-webkit-scrollbar-thumb { background: #d6cfc4; border-radius: 9999px; }
 *::-webkit-scrollbar-track { background: transparent; }
 
+/* Reusable card matching the design system */
+.fc-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(0, 56, 86, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 56, 86, 0.06);
+}
+
+/* Page enter animations */
 @keyframes fc-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .fc-fade-in { animation: fc-fade-in 0.4s ease both; }
 
+@keyframes fc-fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fc-rise { animation: fc-fade-in-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Skeleton shimmer */
 @keyframes fc-shimmer {
   0% { background-position: -468px 0; }
   100% { background-position: 468px 0; }
 }
 .fc-skeleton {
-  background: linear-gradient(90deg, #eef2f6 25%, #e2e8f0 37%, #eef2f6 63%);
+  background: linear-gradient(90deg, #efeae3 25%, #e4ddd2 37%, #efeae3 63%);
   background-size: 800px 100%;
   animation: fc-shimmer 1.4s ease infinite;
+}
+
+/* Subtle dotted accent for hero backgrounds */
+.fc-grid-accent {
+  background-image: radial-gradient(rgba(0, 56, 86, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
 }

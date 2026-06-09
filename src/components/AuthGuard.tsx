@@ -8,7 +8,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f4f7fa]">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f6f3]">
         <div className="flex flex-col items-center gap-3">
           <Spinner className="h-8 w-8" />
           <p className="text-sm text-stone-500">Sitzung wird geprüft …</p>

@@ -3,7 +3,7 @@ import { BrandLink } from "@/components/Brand";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#f4f7fa]">
+    <div className="flex min-h-screen flex-col bg-[#f8f6f3]">
       <div className="flex h-16 items-center px-6">
         <BrandLink />
       </div>

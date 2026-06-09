@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f4f7fa] text-sm text-stone-500">
+      <div className="flex h-screen items-center justify-center bg-[#f8f6f3] text-sm text-stone-500">
         Laden …
       </div>
     );

@@ -1,16 +1,31 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  CloudUpload,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  FileText,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { flowcheckApi, ApiError, type UploadResult } from "@/lib/api-client";
 import PageHeader from "@/components/PageHeader";
-import { Spinner } from "@/components/States";
+
+type RowState = "uploading" | "processing" | "done" | "error";
 
 interface Row {
+  id: string;
   file: File;
-  state: "queued" | "uploading" | "done" | "error";
+  state: RowState;
+  progress: number;
   detail?: string;
 }
+
+const ACCEPT = ".pdf,.jpg,.jpeg,.png,.xml";
+const MAX_FILES = 20;
 
 function fileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,93 +33,164 @@ function fileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-const ACCEPT = ".pdf,.xml,.png,.jpg,.jpeg";
+const STATE_LABEL: Record<RowState, string> = {
+  uploading: "Wird hochgeladen …",
+  processing: "Verarbeitung läuft …",
+  done: "Fertig",
+  error: "Fehler",
+};
 
 export default function UploadPage() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [dragging, setDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const intervals = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
-  const addFiles = useCallback((files: FileList | File[]) => {
-    const list = Array.from(files);
-    if (list.length === 0) return;
-    setRows((prev) => [...prev, ...list.map((file) => ({ file, state: "queued" as const }))]);
+  const clearIntervals = useCallback(() => {
+    Object.values(intervals.current).forEach((iv) => clearInterval(iv));
+    intervals.current = {};
   }, []);
+
+  useEffect(() => () => clearIntervals(), [clearIntervals]);
+
+  const startProgress = useCallback((id: string) => {
+    const iv = setInterval(() => {
+      setRows((prev) =>
+        prev.map((r) => {
+          if (r.id !== id || r.state === "done" || r.state === "error") return r;
+          const next = Math.min(90, r.progress + Math.random() * 12 + 3);
+          const state: RowState = next > 55 ? "processing" : "uploading";
+          return { ...r, progress: next, state };
+        })
+      );
+    }, 320);
+    intervals.current[id] = iv;
+  }, []);
+
+  const runUpload = useCallback(
+    async (newRows: Row[]) => {
+      setBusy(true);
+      setGlobalError(null);
+      newRows.forEach((r) => startProgress(r.id));
+      try {
+        const results = await flowcheckApi.upload(newRows.map((r) => r.file));
+        const byName = new Map<string, UploadResult>();
+        (results || []).forEach((res) => byName.set(res.filename, res));
+        setRows((prev) =>
+          prev.map((r) => {
+            const target = newRows.find((n) => n.id === r.id);
+            if (!target) return r;
+            const iv = intervals.current[r.id];
+            if (iv) {
+              clearInterval(iv);
+              delete intervals.current[r.id];
+            }
+            const res = byName.get(r.file.name);
+            if (res && res.status !== "ok" && res.status !== undefined) {
+              return {
+                ...r,
+                state: "error",
+                progress: 100,
+                detail: res.detail || "Verarbeitung fehlgeschlagen",
+              };
+            }
+            return { ...r, state: "done", progress: 100, detail: res?.detail };
+          })
+        );
+      } catch (e) {
+        const msg = e instanceof ApiError ? e.message : "Upload fehlgeschlagen.";
+        setGlobalError(msg);
+        setRows((prev) =>
+          prev.map((r) => {
+            const target = newRows.find((n) => n.id === r.id);
+            if (!target) return r;
+            const iv = intervals.current[r.id];
+            if (iv) {
+              clearInterval(iv);
+              delete intervals.current[r.id];
+            }
+            return { ...r, state: "error", progress: 100, detail: msg };
+          })
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [startProgress]
+  );
+
+  const addFiles = useCallback(
+    (files: FileList | File[]) => {
+      const list = Array.from(files).slice(0, MAX_FILES);
+      if (list.length === 0) return;
+      const newRows: Row[] = list.map((file) => ({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        state: "uploading" as const,
+        progress: 0,
+      }));
+      setRows((prev) => [...prev, ...newRows].slice(0, MAX_FILES));
+      void runUpload(newRows);
+    },
+    [runUpload]
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      setDragging(false);
+      setIsDragging(false);
       if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
     },
     [addFiles]
   );
 
-  const removeRow = (idx: number) => setRows((prev) => prev.filter((_, i) => i !== idx));
-
-  const uploadAll = async () => {
-    const pending = rows.filter((r) => r.state === "queued" || r.state === "error");
-    if (pending.length === 0) return;
-    setBusy(true);
-    setError(null);
-    setRows((prev) => prev.map((r) => (r.state === "queued" || r.state === "error" ? { ...r, state: "uploading" } : r)));
-    try {
-      const results = await flowcheckApi.upload(pending.map((r) => r.file));
-      const byName = new Map<string, UploadResult>();
-      (results || []).forEach((res) => byName.set(res.filename, res));
-      setRows((prev) =>
-        prev.map((r) => {
-          if (r.state !== "uploading") return r;
-          const res = byName.get(r.file.name);
-          if (res && res.status !== "ok" && res.status !== undefined) {
-            return { ...r, state: "error", detail: res.detail || "Verarbeitung fehlgeschlagen" };
-          }
-          return { ...r, state: "done", detail: res?.detail };
-        })
-      );
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Upload fehlgeschlagen";
-      setError(msg);
-      setRows((prev) => prev.map((r) => (r.state === "uploading" ? { ...r, state: "error", detail: msg } : r)));
-    } finally {
-      setBusy(false);
+  const removeRow = (id: string) => {
+    const iv = intervals.current[id];
+    if (iv) {
+      clearInterval(iv);
+      delete intervals.current[id];
     }
+    setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const queuedCount = rows.filter((r) => r.state === "queued" || r.state === "error").length;
+  const reset = () => {
+    clearIntervals();
+    setRows([]);
+    setGlobalError(null);
+  };
+
   const doneCount = rows.filter((r) => r.state === "done").length;
+  const allFinished = rows.length > 0 && rows.every((r) => r.state === "done" || r.state === "error");
 
   return (
     <div className="fc-fade-in">
       <PageHeader
-        title="Rechnungen hochladen"
-        description="PDF, XRechnung (XML) oder Foto — mehrere Dateien gleichzeitig möglich."
-        action={
-          doneCount > 0 ? (
-            <Link
-              href="/rechnungen"
-              className="rounded-xl bg-[#003856] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#002a42]"
-            >
-              Zu den Rechnungen →
-            </Link>
-          ) : undefined
-        }
+        title="Upload"
+        description="Rechnungen hochladen und automatisch verarbeiten lassen"
       />
 
       <div
         onDragOver={(e) => {
           e.preventDefault();
-          setDragging(true);
+          setIsDragging(true);
         }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         role="button"
         tabIndex={0}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 text-center transition ${
-          dragging ? "border-[#003856] bg-[#003856]/5" : "border-stone-300 bg-white hover:border-[#003856]/40"
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-14 text-center transition-all ${
+          isDragging
+            ? "border-[#003856] bg-[#003856]/5"
+            : "border-[rgba(0,56,86,0.2)] bg-white hover:border-[#003856]/40 hover:bg-[#faf9f7]"
         }`}
       >
         <input
@@ -118,73 +204,113 @@ export default function UploadPage() {
             e.target.value = "";
           }}
         />
-        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#003856]/10 text-2xl">
-          📤
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#003856]/10 text-[#003856]">
+          <CloudUpload className="h-8 w-8" />
         </div>
-        <p className="text-base font-medium text-stone-800">Dateien hierher ziehen</p>
-        <p className="mt-1 text-sm text-stone-500">oder klicken zum Auswählen · PDF, XML, JPG, PNG</p>
+        <p className="text-base font-semibold text-[#1a1a2e]">
+          Rechnungen hierher ziehen oder klicken zum Auswählen
+        </p>
+        <p className="mt-1.5 text-sm text-[#64748b]">
+          PDF, JPEG, PNG, XML (XRechnung/ZUGFeRD) · Max. 10 MB
+        </p>
       </div>
 
-      {error && (
-        <div className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
-          {error}
+      {globalError && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {globalError}
         </div>
       )}
 
       {rows.length > 0 && (
-        <div className="mt-6 rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/60">
-          <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3">
-            <p className="text-sm font-semibold text-stone-800">
+        <div className="mt-6 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+          <div className="flex items-center justify-between border-b border-[rgba(0,56,86,0.06)] px-6 py-4">
+            <h2 className="text-xl font-semibold text-[#1a1a2e]">
               {rows.length} {rows.length === 1 ? "Datei" : "Dateien"}
-              {doneCount > 0 && <span className="ml-2 text-emerald-600">· {doneCount} verarbeitet</span>}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setRows([])}
-                disabled={busy}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100 disabled:opacity-50"
-              >
-                Leeren
-              </button>
-              <button
-                onClick={uploadAll}
-                disabled={busy || queuedCount === 0}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#002a42] disabled:opacity-50"
-              >
-                {busy && <Spinner className="h-4 w-4 text-white" />}
-                {busy ? "Lädt hoch …" : `${queuedCount} hochladen`}
-              </button>
-            </div>
+              {doneCount > 0 && (
+                <span className="ml-2 text-sm font-medium text-emerald-600">
+                  · {doneCount} verarbeitet
+                </span>
+              )}
+            </h2>
+            <button
+              onClick={reset}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5 disabled:opacity-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Weitere hochladen
+            </button>
           </div>
-          <ul className="divide-y divide-stone-100">
-            {rows.map((r, i) => (
-              <li key={`${r.file.name}-${i}`} className="flex items-center gap-3 px-5 py-3">
-                <span className="text-lg">{r.file.type.includes("pdf") ? "📕" : r.file.name.endsWith(".xml") ? "🧾" : "🖼️"}</span>
+
+          <ul className="divide-y divide-[rgba(0,56,86,0.06)]">
+            {rows.map((r) => (
+              <li key={r.id} className="flex items-center gap-4 px-6 py-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf9f7] text-[#003856]">
+                  <FileText className="h-5 w-5" />
+                </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-stone-800">{r.file.name}</p>
-                  <p className="text-xs text-stone-400">
-                    {fileSize(r.file.size)}
-                    {r.detail && <span className="ml-2 text-rose-500">{r.detail}</span>}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-medium text-[#1a1a2e]">{r.file.name}</p>
+                    <span className="shrink-0 text-xs text-[#64748b]">{fileSize(r.file.size)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[rgba(0,56,86,0.08)]">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          r.state === "error"
+                            ? "bg-red-500"
+                            : r.state === "done"
+                              ? "bg-emerald-500"
+                              : "bg-[#003856]"
+                        }`}
+                        style={{ width: `${r.progress}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`flex shrink-0 items-center gap-1.5 text-xs font-medium ${
+                        r.state === "error"
+                          ? "text-red-600"
+                          : r.state === "done"
+                            ? "text-emerald-600"
+                            : "text-[#64748b]"
+                      }`}
+                    >
+                      {r.state === "done" && <CheckCircle2 className="h-4 w-4" />}
+                      {r.state === "error" && <AlertCircle className="h-4 w-4" />}
+                      {(r.state === "uploading" || r.state === "processing") && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      {r.state === "done" ? "Fertig ✅" : STATE_LABEL[r.state]}
+                    </span>
+                  </div>
+                  {r.state === "error" && r.detail && (
+                    <p className="mt-1.5 text-xs text-red-600">{r.detail}</p>
+                  )}
                 </div>
-                <div className="shrink-0">
-                  {r.state === "queued" && <span className="text-xs text-stone-400">Bereit</span>}
-                  {r.state === "uploading" && <Spinner className="h-4 w-4" />}
-                  {r.state === "done" && <span className="text-xs font-semibold text-emerald-600">✓ Fertig</span>}
-                  {r.state === "error" && <span className="text-xs font-semibold text-rose-600">Fehler</span>}
-                </div>
-                {(r.state === "queued" || r.state === "error") && !busy && (
+                {(r.state === "done" || r.state === "error") && (
                   <button
-                    onClick={() => removeRow(i)}
-                    className="text-stone-300 transition hover:text-rose-500"
+                    onClick={() => removeRow(r.id)}
+                    className="shrink-0 rounded-lg p-1 text-[#64748b] transition hover:bg-[#faf9f7] hover:text-red-600"
                     aria-label="Entfernen"
                   >
-                    ✕
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </li>
             ))}
           </ul>
+
+          {allFinished && doneCount > 0 && (
+            <div className="flex items-center justify-end gap-3 border-t border-[rgba(0,56,86,0.06)] px-6 py-4">
+              <Link
+                href="/rechnungen"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 font-medium text-white transition-all hover:bg-[#002a42]"
+              >
+                Zu den Rechnungen →
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

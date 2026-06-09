@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { flowcheckApi, type Freigabe } from "@/lib/api-client";
+import { CheckCircle2, Check, X } from "lucide-react";
+import { flowcheckApi, ApiError, type Freigabe } from "@/lib/api-client";
 import { eur, dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
-import { LoadingState, ErrorState, EmptyState, Spinner } from "@/components/States";
+import { ErrorState, EmptyState, TableSkeleton, Spinner } from "@/components/States";
 
 export default function FreigabenPage() {
   const [items, setItems] = useState<Freigabe[]>([]);
@@ -19,22 +20,22 @@ export default function FreigabenPage() {
   const load = useCallback(() => {
     flowcheckApi
       .freigaben()
-      .then((r) => {
-        setItems(r.items || []);
+      .then((d) => {
+        setItems(d.items || []);
         setError(null);
       })
-      .catch((e) => setError(e?.message || "Fehler beim Laden"))
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Daten konnten nicht geladen werden."))
       .finally(() => setLoading(false));
   }, []);
 
-  const retry = () => {
+  const retry = useCallback(() => {
     setLoading(true);
     setError(null);
-    load();
-  };
+    void load();
+  }, [load]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const flash = (msg: string) => {
@@ -76,58 +77,84 @@ export default function FreigabenPage() {
     <div className="fc-fade-in">
       <PageHeader
         title="Freigaben"
-        description="Offene Rechnungen, die auf Ihre Genehmigung warten"
+        description="Ausstehende Rechnungsfreigaben"
       />
 
       {loading ? (
-        <LoadingState />
+        <TableSkeleton rows={5} cols={5} />
       ) : error ? (
         <ErrorState message={error} onRetry={retry} />
       ) : items.length === 0 ? (
-        <EmptyState icon="✅" title="Keine offenen Freigaben" description="Alle Rechnungen sind bearbeitet." />
+        <EmptyState
+          icon={<CheckCircle2 className="h-6 w-6" />}
+          title="Keine ausstehenden Freigaben."
+          description="Alle Rechnungen sind bearbeitet."
+        />
       ) : (
-        <div className="space-y-3">
-          {items.map((f) => (
-            <div
-              key={f.id}
-              className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/60 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/rechnungen/${f.invoice_id}`}
-                    className="font-medium text-stone-800 hover:text-[#003856]"
-                  >
-                    {f.lieferant || "—"}
-                  </Link>
-                  <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600">
-                    Stufe {f.stufe}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-stone-400">
-                  Rechnung #{f.invoice_id} · erstellt {dateDE(f.erstellt_am, true)}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <span className="text-lg font-semibold text-[#003856]">{eur(f.betrag)}</span>
-                <button
-                  onClick={() => setRejectFor(f)}
-                  disabled={actingId === f.id}
-                  className="rounded-xl px-4 py-2 text-sm font-medium text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-50 disabled:opacity-50"
-                >
-                  Ablehnen
-                </button>
-                <button
-                  onClick={() => approve(f)}
-                  disabled={actingId === f.id}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {actingId === f.id && <Spinner className="h-4 w-4 text-white" />}
-                  Genehmigen
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                  <th className="px-6 py-4">Lieferant</th>
+                  <th className="px-6 py-4 text-right">Betrag</th>
+                  <th className="px-6 py-4">Stufe</th>
+                  <th className="px-6 py-4">Erstellt</th>
+                  <th className="px-6 py-4 text-right">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
+                {items.map((f) => (
+                  <tr key={f.id} className="transition hover:bg-[#faf9f7]">
+                    <td className="px-6 py-4">
+                      <Link
+                        href={`/rechnungen/${f.invoice_id}`}
+                        className="font-medium text-[#1a1a2e] transition hover:text-[#003856]"
+                      >
+                        {f.lieferant || "—"}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-[#64748b]">Rechnung #{f.invoice_id}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right font-semibold tabular-nums text-[#003856]">
+                      {eur(f.betrag)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="rounded-lg bg-[#003856]/5 px-2.5 py-1 text-xs font-semibold text-[#003856]">
+                        Stufe {f.stufe}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-[#64748b]">
+                      {dateDE(f.erstellt_am, true)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setRejectFor(f)}
+                          disabled={actingId === f.id}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 disabled:opacity-50"
+                        >
+                          <X className="h-4 w-4" />
+                          Ablehnen
+                        </button>
+                        <button
+                          onClick={() => approve(f)}
+                          disabled={actingId === f.id}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {actingId === f.id ? (
+                            <Spinner className="h-4 w-4 text-white" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                          Freigeben
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -135,31 +162,33 @@ export default function FreigabenPage() {
       {rejectFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setRejectFor(null)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#003856]">Freigabe ablehnen</h3>
-            <p className="mt-1 text-sm text-stone-500">
+          <div className="relative w-full max-w-md rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-[#1a1a2e]">Freigabe ablehnen</h2>
+            <p className="mt-1 text-sm text-[#64748b]">
               {rejectFor.lieferant} · {eur(rejectFor.betrag)}
             </p>
-            <label className="mt-4 block text-sm font-medium text-stone-700">Grund der Ablehnung</label>
+            <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              Grund der Ablehnung
+            </label>
             <textarea
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
               rows={3}
               autoFocus
               placeholder="z. B. Betrag weicht von Bestellung ab"
-              className="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+              className="mt-1.5 w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
             />
             <div className="mt-5 flex justify-end gap-3">
               <button
                 onClick={() => setRejectFor(null)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
+                className="rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5"
               >
                 Abbrechen
               </button>
               <button
                 onClick={confirmReject}
                 disabled={actingId === rejectFor.id}
-                className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
               >
                 {actingId === rejectFor.id && <Spinner className="h-4 w-4 text-white" />}
                 Ablehnen

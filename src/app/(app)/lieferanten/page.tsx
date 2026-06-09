@@ -1,24 +1,25 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { flowcheckApi, type Lieferant } from "@/lib/api-client";
+import { Building2, Search } from "lucide-react";
+import { flowcheckApi, ApiError, type Lieferant } from "@/lib/api-client";
 import { eur, num, dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
-import { LoadingState, ErrorState, EmptyState } from "@/components/States";
+import { ErrorState, EmptyState, TableSkeleton } from "@/components/States";
 
 function RiskBadge({ score }: { score: number }) {
-  let cls = "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  let cls = "bg-emerald-50 text-emerald-700";
   let label = "Niedrig";
-  if (score >= 66) {
-    cls = "bg-rose-50 text-rose-700 ring-rose-200";
+  if (score >= 70) {
+    cls = "bg-red-50 text-red-700";
     label = "Hoch";
-  } else if (score >= 33) {
-    cls = "bg-amber-50 text-amber-700 ring-amber-200";
+  } else if (score >= 40) {
+    cls = "bg-amber-50 text-amber-700";
     label = "Mittel";
   }
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ${cls}`}>
-      <span className="tabular-nums">{Math.round(score)}</span>· {label}
+    <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold ${cls}`}>
+      <span className="tabular-nums">{Math.round(score)}</span> · {label}
     </span>
   );
 }
@@ -32,22 +33,22 @@ export default function LieferantenPage() {
   const load = useCallback(() => {
     flowcheckApi
       .lieferanten()
-      .then((r) => {
-        setItems(r.items || []);
+      .then((d) => {
+        setItems(d.items || []);
         setError(null);
       })
-      .catch((e) => setError(e?.message || "Fehler beim Laden"))
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Daten konnten nicht geladen werden."))
       .finally(() => setLoading(false));
   }, []);
 
-  const retry = () => {
+  const retry = useCallback(() => {
     setLoading(true);
     setError(null);
-    load();
-  };
+    void load();
+  }, [load]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const filtered = items.filter((l) => l.name?.toLowerCase().includes(q.toLowerCase()));
@@ -58,44 +59,51 @@ export default function LieferantenPage() {
         title="Lieferanten"
         description={items.length > 0 ? `${items.length} Lieferanten` : "Übersicht aller Lieferanten"}
         action={
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Suchen …"
-            className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
-          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748b]" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Suchen …"
+              className="rounded-xl border border-[rgba(0,56,86,0.12)] bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
+            />
+          </div>
         }
       />
 
       {loading ? (
-        <LoadingState />
+        <TableSkeleton rows={6} cols={6} />
       ) : error ? (
         <ErrorState message={error} onRetry={retry} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🏢" title="Keine Lieferanten" description={q ? "Keine Treffer für Ihre Suche." : "Noch keine Lieferanten erfasst."} />
+        <EmptyState
+          icon={<Building2 className="h-6 w-6" />}
+          title={q ? "Keine Treffer" : "Noch keine Lieferanten erfasst."}
+          description={q ? "Keine Lieferanten passen zu Ihrer Suche." : undefined}
+        />
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/60">
+        <div className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-stone-100 text-left text-xs uppercase tracking-wide text-stone-400">
-                  <th className="px-5 py-3 font-medium">Lieferant</th>
-                  <th className="px-5 py-3 text-right font-medium">Rechnungen</th>
-                  <th className="px-5 py-3 text-right font-medium">Volumen</th>
-                  <th className="px-5 py-3 text-right font-medium">Ø Betrag</th>
-                  <th className="px-5 py-3 font-medium">Letzte</th>
-                  <th className="px-5 py-3 font-medium">Risiko</th>
+                <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                  <th className="px-6 py-4">Name</th>
+                  <th className="px-6 py-4 text-right">Anzahl Rechnungen</th>
+                  <th className="px-6 py-4 text-right">Gesamtvolumen</th>
+                  <th className="px-6 py-4 text-right">Durchschnitt</th>
+                  <th className="px-6 py-4">Letzte Rechnung</th>
+                  <th className="px-6 py-4">Risiko-Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
                 {filtered.map((l) => (
-                  <tr key={l.name} className="transition hover:bg-stone-50">
-                    <td className="px-5 py-3 font-medium text-stone-800">{l.name}</td>
-                    <td className="px-5 py-3 text-right text-stone-600">{num(l.anzahl_rechnungen)}</td>
-                    <td className="px-5 py-3 text-right font-medium text-stone-800">{eur(l.gesamtvolumen)}</td>
-                    <td className="px-5 py-3 text-right text-stone-600">{eur(l.durchschnitt)}</td>
-                    <td className="px-5 py-3 text-stone-500">{dateDE(l.letzte_rechnung)}</td>
-                    <td className="px-5 py-3"><RiskBadge score={l.risiko_score ?? 0} /></td>
+                  <tr key={l.name} className="transition hover:bg-[#faf9f7]">
+                    <td className="px-6 py-4 font-medium text-[#1a1a2e]">{l.name}</td>
+                    <td className="px-6 py-4 text-right tabular-nums text-[#64748b]">{num(l.anzahl_rechnungen)}</td>
+                    <td className="px-6 py-4 text-right font-semibold tabular-nums text-[#1a1a2e]">{eur(l.gesamtvolumen)}</td>
+                    <td className="px-6 py-4 text-right tabular-nums text-[#64748b]">{eur(l.durchschnitt)}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-[#64748b]">{dateDE(l.letzte_rechnung)}</td>
+                    <td className="px-6 py-4"><RiskBadge score={l.risiko_score ?? 0} /></td>
                   </tr>
                 ))}
               </tbody>

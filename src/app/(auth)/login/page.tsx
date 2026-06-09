@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BrandLink } from "@/components/Brand";
+import { BrandLink, LogoMark } from "@/components/Brand";
 import { Spinner } from "@/components/States";
+import { ShieldCheck, Landmark, Sparkles, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -43,38 +44,78 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f4f7fa]">
-      <div className="flex h-16 items-center px-6">
-        <BrandLink />
-      </div>
-      <div className="flex flex-1 items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-[#f8f6f3] lg:grid lg:grid-cols-2">
+      {/* LEFT — Brand showcase (Desktop) */}
+      <aside className="relative hidden flex-col justify-between bg-[#003856] p-12 text-white lg:flex">
+        <Link href="/" className="flex items-center gap-3">
+          <LogoMark className="h-10 w-10" />
+          <span className="text-xl font-semibold tracking-tight text-white">
+            FlowCheck <span className="text-[#c8985a]">AI+</span>
+          </span>
+        </Link>
+
+        <div className="max-w-md">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight">
+            Eingangsrechnungen intelligent prüfen, freigeben und exportieren.
+          </h2>
+          <ul className="mt-10 space-y-5">
+            <li className="flex items-start gap-3.5">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#c8985a]">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <span className="text-sm leading-relaxed text-white/90">DSGVO-konform &amp; GoBD-ready</span>
+            </li>
+            <li className="flex items-start gap-3.5">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#c8985a]">
+                <Landmark className="h-5 w-5" />
+              </span>
+              <span className="text-sm leading-relaxed text-white/90">DATEV-Export inklusive</span>
+            </li>
+            <li className="flex items-start gap-3.5">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#c8985a]">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <span className="text-sm leading-relaxed text-white/90">KI-Prüfung in Sekunden</span>
+            </li>
+          </ul>
+        </div>
+
+        <p className="text-xs text-white/50">© {new Date().getFullYear()} FlowCheck AI+</p>
+      </aside>
+
+      {/* RIGHT — Form */}
+      <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+        <div className="mb-8 lg:hidden">
+          <BrandLink />
+        </div>
+
         <div className="w-full max-w-md">
-          <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-stone-200/60">
+          <div className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-8 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
             <h1 className="text-2xl font-semibold tracking-tight text-[#003856]">Willkommen zurück</h1>
-            <p className="mt-1 text-sm text-stone-500">Melden Sie sich bei FlowCheck AI+ an.</p>
+            <p className="mt-1 text-sm text-[#64748b]">Melden Sie sich bei FlowCheck AI+ an.</p>
 
             {error && (
-              <div className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+              <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
                 {error}
               </div>
             )}
 
             <form onSubmit={submit} className="mt-6 space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-stone-700">E-Mail</label>
+                <label className="mb-1 block text-sm font-medium text-[#1a1a2e]">E-Mail</label>
                 <input
                   type="email"
                   required
                   autoFocus
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  className="w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
                   placeholder="name@firma.de"
                 />
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className="block text-sm font-medium text-stone-700">Passwort</label>
+                  <label className="block text-sm font-medium text-[#1a1a2e]">Passwort</label>
                   <Link href="/forgot-password" className="text-sm font-medium text-[#003856] hover:underline">
                     Passwort vergessen?
                   </Link>
@@ -84,14 +125,14 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/10"
+                  className="w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
                   placeholder="••••••••"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#003856] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#002a42] disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#003856] px-4 py-3 font-medium text-white transition-all hover:bg-[#002a42] disabled:opacity-60"
               >
                 {loading && <Spinner className="h-4 w-4 text-white" />}
                 {loading ? "Anmeldung läuft …" : "Anmelden"}
@@ -99,14 +140,25 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <p className="mt-6 text-center text-sm text-stone-500">
+          {/* Trust badges */}
+          <div className="mt-6 flex items-center justify-center gap-4 text-xs text-[#64748b]">
+            <span className="flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5" /> 256-Bit Verschlüsselung
+            </span>
+            <span className="text-[#64748b]/40">·</span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" /> 🇩🇪 Deutsche Server
+            </span>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-[#64748b]">
             Noch kein Konto?{" "}
             <Link href="/register" className="font-medium text-[#003856] hover:underline">
               Jetzt registrieren
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

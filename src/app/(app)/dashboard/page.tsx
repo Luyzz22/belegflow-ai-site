@@ -4,57 +4,86 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { flowcheckApi, type DashboardKpis, type InvoiceListItem } from "@/lib/api-client";
+import {
+  FileText,
+  Gauge,
+  Clock,
+  ShieldAlert,
+  TrendingUp,
+  ArrowRight,
+  Inbox,
+} from "lucide-react";
+import { flowcheckApi, ApiError, type DashboardKpis, type InvoiceListItem } from "@/lib/api-client";
 import { eur, num, dateDE } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
-import { LoadingState, ErrorState, EmptyState, Skeleton } from "@/components/States";
+import { ErrorState, EmptyState, CardSkeleton, Skeleton } from "@/components/States";
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 11) return "Guten Morgen";
+  if (h < 18) return "Guten Tag";
+  return "Guten Abend";
+}
 
 function KpiCard({
   label,
   value,
-  sub,
+  icon: Icon,
+  trend,
   badge,
   progress,
+  sub,
 }: {
   label: string;
   value: string;
-  sub?: React.ReactNode;
+  icon: typeof FileText;
+  trend?: string;
   badge?: { text: string; cls: string };
   progress?: number;
+  sub?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/60">
+    <div className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-all hover:shadow-md">
       <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-stone-500">{label}</p>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
+          <Icon className="h-5 w-5" />
+        </span>
         {badge && (
-          <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${badge.cls}`}>
-            {badge.text}
+          <span className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${badge.cls}`}>{badge.text}</span>
+        )}
+        {trend && !badge && (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <TrendingUp className="h-3.5 w-3.5" />
+            {trend}
           </span>
         )}
       </div>
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-[#003856]">{value}</p>
+      <p className="mt-4 text-xs font-medium uppercase tracking-wider text-[#64748b]">{label}</p>
+      <p className="mt-1 text-3xl font-bold tracking-tight text-[#1a1a2e]">{value}</p>
       {typeof progress === "number" && (
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-stone-100">
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#003856]/5">
           <div
-            className="h-full rounded-full bg-[#c8985a]"
+            className="h-full rounded-full bg-gradient-to-r from-[#003856] to-[#c8985a] transition-[width] duration-500"
             style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           />
         </div>
       )}
-      {sub && <p className="mt-2 text-xs text-stone-500">{sub}</p>}
+      {sub && <p className="mt-2 text-xs text-[#64748b]">{sub}</p>}
     </div>
   );
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [recent, setRecent] = useState<InvoiceListItem[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,82 +92,87 @@ export default function DashboardPage() {
   const load = useCallback(() => {
     Promise.all([
       flowcheckApi.kpis(),
-      flowcheckApi.invoices("limit=5&offset=0").then((r) => r.items).catch(() => [] as InvoiceListItem[]),
+      flowcheckApi
+        .invoices("limit=5&offset=0")
+        .then((r) => r.items)
+        .catch(() => [] as InvoiceListItem[]),
     ])
-      .then(([k, r]) => {
+      .then(([k, inv]) => {
         setKpis(k);
-        setRecent(r);
+        setRecent(inv);
         setError(null);
       })
-      .catch((e) => setError(e?.message || "Fehler beim Laden"))
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Daten konnten nicht geladen werden."))
       .finally(() => setLoading(false));
   }, []);
 
-  const retry = () => {
+  const retry = useCallback(() => {
     setLoading(true);
     setError(null);
-    load();
-  };
+    void load();
+  }, [load]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
+
+  const firstName = (user?.name || "").split(" ")[0];
+  const header = (
+    <PageHeader
+      title={`${greeting()}${firstName ? `, ${firstName}` : ""}`}
+      description="Überblick über Ihre Rechnungsverarbeitung"
+    />
+  );
 
   if (loading && !kpis) {
     return (
-      <>
-        <PageHeader title="Dashboard" description="Überblick über Ihre Rechnungsverarbeitung" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full" />
-          ))}
+      <div className="fc-fade-in">
+        {header}
+        <CardSkeleton count={4} />
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Skeleton className="h-72 w-full rounded-2xl lg:col-span-2" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </div>
-        <LoadingState />
-      </>
+      </div>
     );
   }
 
   if (error && !kpis) {
     return (
-      <>
-        <PageHeader title="Dashboard" description="Überblick über Ihre Rechnungsverarbeitung" />
+      <div className="fc-fade-in">
+        {header}
         <ErrorState message={error} onRetry={retry} />
-      </>
+      </div>
     );
   }
 
-  const dringend =
-    kpis?.aelteste_freigabe_stunden != null && kpis.aelteste_freigabe_stunden > 48;
-
+  const dringend = kpis?.aelteste_freigabe_stunden != null && kpis.aelteste_freigabe_stunden > 48;
   const trend = kpis?.trend ?? [];
 
   return (
     <div className="fc-fade-in">
-      <PageHeader title="Dashboard" description="Überblick über Ihre Rechnungsverarbeitung" />
+      {header}
 
+      {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Rechnungen diesen Monat"
           value={num(kpis?.rechnungen_monat ?? 0)}
-          sub={
-            <span className="inline-flex items-center gap-1 text-emerald-600">
-              ▲ {num(kpis?.rechnungen_heute ?? 0)} heute
-            </span>
-          }
+          icon={FileText}
+          trend={(kpis?.rechnungen_heute ?? 0) > 0 ? `+${num(kpis?.rechnungen_heute ?? 0)} heute` : undefined}
+          sub={(kpis?.rechnungen_heute ?? 0) === 0 ? "Heute noch keine neuen" : undefined}
         />
         <KpiCard
           label="Automatisierungsquote"
           value={`${Math.round(kpis?.automatisierungsquote ?? 0)}%`}
+          icon={Gauge}
           progress={kpis?.automatisierungsquote ?? 0}
         />
         <KpiCard
           label="Offene Freigaben"
           value={num(kpis?.offene_freigaben ?? 0)}
-          badge={
-            dringend
-              ? { text: "dringend", cls: "bg-rose-50 text-rose-700 ring-1 ring-rose-200" }
-              : undefined
-          }
+          icon={Clock}
+          badge={dringend ? { text: "dringend", cls: "bg-red-50 text-red-700" } : undefined}
           sub={
             kpis?.aelteste_freigabe_stunden != null
               ? `Älteste: ${Math.round(kpis.aelteste_freigabe_stunden)} h`
@@ -148,36 +182,43 @@ export default function DashboardPage() {
         <KpiCard
           label="Anomalie-Alerts"
           value={num(kpis?.anomalie_alerts ?? 0)}
+          icon={ShieldAlert}
           badge={
             (kpis?.anomalie_alerts ?? 0) > 0
-              ? { text: "prüfen", cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" }
-              : { text: "ok", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" }
+              ? { text: "prüfen", cls: "bg-amber-50 text-amber-700" }
+              : { text: "ok", cls: "bg-emerald-50 text-emerald-700" }
           }
         />
       </div>
 
+      {/* Chart + volume */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Trend */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/60 lg:col-span-2">
+        <div className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)] lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-stone-800">30-Tage-Verlauf</h2>
-            <span className="text-xs text-stone-400">Verarbeitungsvolumen</span>
+            <h2 className="text-xl font-semibold text-[#1a1a2e]">30-Tage-Verlauf</h2>
+            <span className="text-xs font-medium uppercase tracking-wider text-[#64748b]">Verarbeitungsvolumen</span>
           </div>
           {trend.length === 0 ? (
-            <div className="flex h-64 items-center justify-center text-sm text-stone-400">
+            <div className="flex h-64 items-center justify-center text-sm text-[#64748b]">
               Noch keine Verlaufsdaten
             </div>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f6" vertical={false} />
+                <AreaChart data={trend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#003856" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="#003856" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ede7df" vertical={false} />
                   <XAxis
                     dataKey="datum"
                     tick={{ fontSize: 11, fill: "#94a3b8" }}
                     tickFormatter={(v) => dateDE(v).slice(0, 5)}
                     tickLine={false}
-                    axisLine={{ stroke: "#e2e8f0" }}
+                    axisLine={{ stroke: "#e7e0d6" }}
                     minTickGap={24}
                   />
                   <YAxis
@@ -188,39 +229,37 @@ export default function DashboardPage() {
                     width={36}
                   />
                   <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "1px solid #e2e8f0",
-                      fontSize: 12,
-                    }}
+                    contentStyle={{ borderRadius: 12, border: "1px solid #e7e0d6", fontSize: 12 }}
                     labelFormatter={(v) => dateDE(String(v))}
                     formatter={(v: number) => [num(v), "Rechnungen"]}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="anzahl"
                     stroke="#003856"
                     strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 5, fill: "#c8985a" }}
+                    fill="url(#fcArea)"
+                    activeDot={{ r: 5, fill: "#c8985a", stroke: "#fff", strokeWidth: 2 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        {/* Quartal summary */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/60">
-          <h2 className="mb-4 text-sm font-semibold text-stone-800">Volumen</h2>
+        <div className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+          <h2 className="mb-4 text-xl font-semibold text-[#1a1a2e]">Volumen</h2>
           <dl className="space-y-4">
             {[
               ["Heute", kpis?.rechnungen_heute ?? 0],
               ["Diesen Monat", kpis?.rechnungen_monat ?? 0],
               ["Dieses Quartal", kpis?.rechnungen_quartal ?? 0],
             ].map(([label, val]) => (
-              <div key={label as string} className="flex items-center justify-between border-b border-stone-100 pb-3 last:border-0 last:pb-0">
-                <dt className="text-sm text-stone-500">{label}</dt>
+              <div
+                key={label as string}
+                className="flex items-center justify-between border-b border-[rgba(0,56,86,0.06)] pb-3 last:border-0 last:pb-0"
+              >
+                <dt className="text-sm text-[#64748b]">{label}</dt>
                 <dd className="text-lg font-semibold text-[#003856]">{num(val as number)}</dd>
               </div>
             ))}
@@ -229,23 +268,26 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent invoices */}
-      <div className="mt-6 rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/60">
-        <div className="flex items-center justify-between px-5 py-4">
-          <h2 className="text-sm font-semibold text-stone-800">Letzte Rechnungen</h2>
-          <Link href="/rechnungen" className="text-sm font-medium text-[#003856] hover:underline">
-            Alle ansehen →
+      <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+        <div className="flex items-center justify-between px-6 py-4">
+          <h2 className="text-xl font-semibold text-[#1a1a2e]">Letzte Rechnungen</h2>
+          <Link
+            href="/rechnungen"
+            className="inline-flex items-center gap-1 text-sm font-medium text-[#003856] transition hover:gap-2"
+          >
+            Alle ansehen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         {recent && recent.length === 0 ? (
-          <div className="px-5 pb-6">
+          <div className="px-6 pb-6">
             <EmptyState
-              icon="📄"
+              icon={<Inbox className="h-6 w-6" />}
               title="Noch keine Rechnungen"
               description="Laden Sie Ihre erste Rechnung hoch, um loszulegen."
               action={
                 <Link
                   href="/upload"
-                  className="rounded-xl bg-[#003856] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#002a42]"
+                  className="rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42]"
                 >
                   Rechnung hochladen
                 </Link>
@@ -256,25 +298,30 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-y border-stone-100 text-left text-xs uppercase tracking-wide text-stone-400">
-                  <th className="px-5 py-2.5 font-medium">Lieferant</th>
-                  <th className="px-5 py-2.5 font-medium">Betrag</th>
-                  <th className="px-5 py-2.5 font-medium">Status</th>
-                  <th className="px-5 py-2.5 font-medium">Datum</th>
+                <tr className="border-y border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                  <th className="px-6 py-2.5">Lieferant</th>
+                  <th className="px-6 py-2.5">Betrag</th>
+                  <th className="px-6 py-2.5">Status</th>
+                  <th className="px-6 py-2.5">Datum</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
                 {(recent ?? []).map((inv) => (
-                  <tr key={inv.id} className="transition hover:bg-stone-50">
-                    <td className="px-5 py-3">
-                      <Link href={`/rechnungen/${inv.id}`} className="font-medium text-stone-800 hover:text-[#003856]">
+                  <tr key={inv.id} className="transition hover:bg-[#faf9f7]">
+                    <td className="px-6 py-3">
+                      <Link
+                        href={`/rechnungen/${inv.id}`}
+                        className="font-medium text-[#1a1a2e] hover:text-[#003856]"
+                      >
                         {inv.lieferant || "—"}
                       </Link>
-                      <p className="text-xs text-stone-400">{inv.rechnungsnummer}</p>
+                      <p className="text-xs text-[#64748b]">{inv.rechnungsnummer}</p>
                     </td>
-                    <td className="px-5 py-3 font-medium text-stone-800">{eur(inv.betrag, inv.waehrung)}</td>
-                    <td className="px-5 py-3"><StatusBadge status={inv.status} /></td>
-                    <td className="px-5 py-3 text-stone-500">{dateDE(inv.datum)}</td>
+                    <td className="px-6 py-3 font-medium text-[#1a1a2e]">{eur(inv.betrag, inv.waehrung)}</td>
+                    <td className="px-6 py-3">
+                      <StatusBadge status={inv.status} />
+                    </td>
+                    <td className="px-6 py-3 text-[#64748b]">{dateDE(inv.datum)}</td>
                   </tr>
                 ))}
               </tbody>

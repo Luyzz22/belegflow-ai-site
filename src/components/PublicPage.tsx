@@ -13,7 +13,7 @@ export default function PublicPage({
   narrow?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-[#f4f7fa]">
+    <div className="min-h-screen bg-[#f8f6f3]">
       <PublicNav />
       <header className="bg-white">
         <div className="mx-auto max-w-6xl px-6 py-14">
