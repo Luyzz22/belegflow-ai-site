@@ -26,6 +26,12 @@ import {
   Inbox,
   Building2,
   Activity,
+  Zap,
+  Landmark,
+  Upload,
+  Sparkles,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import {
   flowcheckApi,
@@ -166,6 +172,7 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<ActivityItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const load = useCallback(() => {
     Promise.all([
@@ -213,6 +220,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  // Real-time Pulse: stilles Aktualisieren alle 5 s.
+  useEffect(() => {
+    const iv = setInterval(() => load(), 5000);
+    return () => clearInterval(iv);
   }, [load]);
 
   // ── Abgeleitete Daten (reine Berechnungen) ──────────────────────────
@@ -294,9 +307,116 @@ export default function DashboardPage() {
 
   const dringend = kpis?.aelteste_freigabe_stunden != null && kpis.aelteste_freigabe_stunden > 48;
 
+  const isEmpty =
+    !!kpis &&
+    (kpis.rechnungen_monat ?? 0) === 0 &&
+    (kpis.rechnungen_quartal ?? 0) === 0 &&
+    (kpis.rechnungen_heute ?? 0) === 0 &&
+    (invoices?.length ?? 0) === 0;
+
+  if (isEmpty) {
+    const onboardSteps = [
+      { icon: Upload, title: "Rechnung hochladen", desc: "Laden Sie eine Eingangsrechnung als PDF oder XML hoch.", cta: true },
+      { icon: Sparkles, title: "KI prüft automatisch", desc: "Felder werden extrahiert, Pflichtangaben geprüft, Kontierung vorgeschlagen." },
+      { icon: CheckCircle2, title: "Freigeben & Exportieren", desc: "Mit einem Klick freigeben und als DATEV-Buchungsstapel exportieren." },
+    ];
+    return (
+      <div className="fc-fade-in mx-auto max-w-3xl py-8 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-[#1a1a2e]">
+          Willkommen bei FlowCheck AI+ 👋
+        </h1>
+        <p className="mt-2 text-[#64748b]">In 3 Schritten zur automatischen Rechnungsverarbeitung</p>
+        <div className="relative mt-10 grid grid-cols-1 gap-6 text-left sm:grid-cols-3">
+          {onboardSteps.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.title}
+                className="fc-rise rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]"
+                style={{ animationDelay: `${i * 120}ms` }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#003856] text-sm font-bold text-white">
+                    {i + 1}
+                  </span>
+                  <Icon className="h-5 w-5 text-[#c8985a]" />
+                </div>
+                <h3 className="mt-4 font-semibold text-[#1a1a2e]">{s.title}</h3>
+                <p className="mt-1.5 text-sm text-[#64748b]">{s.desc}</p>
+                {s.cta && (
+                  <Link
+                    href="/upload"
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#FFB900] px-4 py-2 text-sm font-semibold text-[#003856] transition-all hover:bg-[#e6a800] active:scale-95"
+                  >
+                    Jetzt hochladen
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const quickActions = [
+    (kpis?.offene_freigaben ?? 0) > 0
+      ? {
+          id: "review",
+          icon: Zap,
+          text: `${num(kpis?.offene_freigaben ?? 0)} ${(kpis?.offene_freigaben ?? 0) === 1 ? "Rechnung wartet" : "Rechnungen warten"} auf Freigabe`,
+          cta: "Review starten",
+          href: "/review",
+        }
+      : null,
+    statusCounts.verarbeitet > 0
+      ? {
+          id: "export",
+          icon: Landmark,
+          text: `${num(statusCounts.verarbeitet)} Rechnungen bereit für DATEV-Export`,
+          cta: "Jetzt exportieren",
+          href: "/export",
+        }
+      : null,
+  ].filter((a): a is NonNullable<typeof a> => a !== null && !dismissed.has(a.id));
+
   return (
     <div className="fc-fade-in">
       {header}
+
+      {/* Quick-Action-Cards */}
+      {quickActions.length > 0 && (
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {quickActions.map((a) => {
+            const Icon = a.icon;
+            return (
+              <div
+                key={a.id}
+                className="group relative flex items-center gap-4 rounded-2xl bg-gradient-to-r from-[#003856] to-[#0a4d70] p-5 text-white shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-all hover:scale-[1.02]"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Icon className="h-5 w-5 text-[#ffb900]" />
+                </span>
+                <p className="flex-1 text-sm font-medium">{a.text}</p>
+                <Link
+                  href={a.href}
+                  className="shrink-0 rounded-xl bg-[#FFB900] px-4 py-2 text-sm font-semibold text-[#003856] transition-all hover:bg-[#e6a800] active:scale-95"
+                >
+                  {a.cta}
+                </Link>
+                <button
+                  onClick={() => setDismissed((prev) => new Set(prev).add(a.id))}
+                  aria-label="Ausblenden"
+                  className="absolute right-2 top-2 rounded-lg p-1 text-white/50 transition hover:bg-white/10 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

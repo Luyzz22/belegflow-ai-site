@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
-import PageHeader from "@/components/PageHeader";
+import { computeConfidence } from "@/lib/confidence";
 import StatusBadge from "@/components/StatusBadge";
+import ConfidenceRing from "@/components/ConfidenceRing";
 import Toast from "@/components/Toast";
 import { LoadingState, ErrorState } from "@/components/States";
 
@@ -118,6 +119,21 @@ export default function InvoiceDetailPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [editingK, setEditingK] = useState(false);
   const [formK, setFormK] = useState({ konto: "", gegenkonto: "", steuerschluessel: "" });
+  const [knownSuppliers, setKnownSuppliers] = useState<Set<string>>(new Set());
+
+  // Bekannte Lieferanten für den Konfidenz-Score (Lieferant mit >1 Rechnung).
+  useEffect(() => {
+    flowcheckApi
+      .lieferanten()
+      .then((r) => {
+        const set = new Set<string>();
+        (r.items || []).forEach((l) => {
+          if (l.anzahl_rechnungen > 1) set.add(l.name);
+        });
+        setKnownSuppliers(set);
+      })
+      .catch(() => setKnownSuppliers(new Set()));
+  }, []);
 
   // PDF-Vorschau laden (Bearer-Token nötig, daher Blob statt direkter iframe-src).
   useEffect(() => {
@@ -248,6 +264,7 @@ export default function InvoiceDetailPage() {
   const pflicht = view.validierung?.pflichtangaben ?? [];
   const anomalien = view.anomalien ?? [];
   const summeOk = Math.abs((view.netto || 0) + (view.ust_betrag || 0) - (view.betrag || 0)) <= 0.01;
+  const confidence = computeConfidence(view, { supplierKnown: knownSuppliers.has(view.lieferant) });
 
   const startEdit = () => {
     setForm({
@@ -305,11 +322,22 @@ export default function InvoiceDetailPage() {
       {flash && <Toast type={flash.type} text={flash.text} onClose={() => setFlash(null)} />}
 
       {BackLink}
-      <PageHeader
-        title={`Rechnung ${view.rechnungsnummer || "—"}`}
-        description={`${view.lieferant || "—"} · ${dateDE(view.datum)}`}
-        action={<StatusBadge status={view.status} />}
-      />
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1a1a2e]">
+            Rechnung {view.rechnungsnummer || "—"}
+          </h1>
+          <p className="mt-1.5 text-sm text-[#64748b]">
+            {view.lieferant || "—"} · {dateDE(view.datum)}
+          </p>
+          <div className="mt-3">
+            <StatusBadge status={view.status} />
+          </div>
+        </div>
+        <div className="shrink-0 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-3 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+          <ConfidenceRing result={confidence} size={108} />
+        </div>
+      </div>
 
       {/* Split-View: PDF links (sticky) · Felder rechts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
