@@ -4,25 +4,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CloudUpload,
-  CheckCircle2,
+  FileText,
+  ScanText,
+  Sparkles,
+  ShieldCheck,
+  Calculator,
+  Check,
   Loader2,
   AlertCircle,
-  FileText,
   RotateCcw,
   X,
+  type LucideIcon,
 } from "lucide-react";
-import { flowcheckApi, ApiError, type UploadResult } from "@/lib/api-client";
+import { flowcheckApi, ApiError } from "@/lib/api-client";
 import PageHeader from "@/components/PageHeader";
 
-type RowState = "uploading" | "processing" | "done" | "error";
+type Status = "running" | "done" | "error";
 
 interface Row {
   id: string;
   file: File;
-  state: RowState;
-  progress: number;
+  stepIndex: number; // Anzahl abgeschlossener Schritte (0–5)
+  status: Status;
+  errorStep?: number;
   detail?: string;
 }
+
+const STEPS: { label: string; icon: LucideIcon }[] = [
+  { label: "Dokument empfangen", icon: FileText },
+  { label: "Text wird extrahiert", icon: ScanText },
+  { label: "KI analysiert Felder", icon: Sparkles },
+  { label: "Pflichtangaben geprüft", icon: ShieldCheck },
+  { label: "Kontierung vorgeschlagen", icon: Calculator },
+];
 
 const ACCEPT = ".pdf,.jpg,.jpeg,.png,.xml";
 const MAX_FILES = 20;
@@ -33,93 +47,69 @@ function fileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-const STATE_LABEL: Record<RowState, string> = {
-  uploading: "Wird hochgeladen …",
-  processing: "Verarbeitung läuft …",
-  done: "Fertig",
-  error: "Fehler",
-};
-
 export default function UploadPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const intervals = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>[]>>({});
 
-  const clearIntervals = useCallback(() => {
-    Object.values(intervals.current).forEach((iv) => clearInterval(iv));
-    intervals.current = {};
+  const clearTimers = useCallback((id?: string) => {
+    if (id) {
+      (timers.current[id] || []).forEach(clearTimeout);
+      delete timers.current[id];
+    } else {
+      Object.values(timers.current).forEach((list) => list.forEach(clearTimeout));
+      timers.current = {};
+    }
   }, []);
 
-  useEffect(() => () => clearIntervals(), [clearIntervals]);
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
-  const startProgress = useCallback((id: string) => {
-    const iv = setInterval(() => {
-      setRows((prev) =>
-        prev.map((r) => {
-          if (r.id !== id || r.state === "done" || r.state === "error") return r;
-          const next = Math.min(90, r.progress + Math.random() * 12 + 3);
-          const state: RowState = next > 55 ? "processing" : "uploading";
-          return { ...r, progress: next, state };
-        })
-      );
-    }, 320);
-    intervals.current[id] = iv;
-  }, []);
+  const patch = (id: string, fn: (r: Row) => Row) =>
+    setRows((prev) => prev.map((r) => (r.id === id ? fn(r) : r)));
 
-  const runUpload = useCallback(
-    async (newRows: Row[]) => {
-      setBusy(true);
-      setGlobalError(null);
-      newRows.forEach((r) => startProgress(r.id));
-      try {
-        const results = await flowcheckApi.upload(newRows.map((r) => r.file));
-        const byName = new Map<string, UploadResult>();
-        (results || []).forEach((res) => byName.set(res.filename, res));
-        setRows((prev) =>
-          prev.map((r) => {
-            const target = newRows.find((n) => n.id === r.id);
-            if (!target) return r;
-            const iv = intervals.current[r.id];
-            if (iv) {
-              clearInterval(iv);
-              delete intervals.current[r.id];
-            }
-            const res = byName.get(r.file.name);
-            if (res && res.status !== "ok" && res.status !== undefined) {
-              return {
-                ...r,
-                state: "error",
-                progress: 100,
-                detail: res.detail || "Verarbeitung fehlgeschlagen",
-              };
-            }
-            return { ...r, state: "done", progress: 100, detail: res?.detail };
-          })
-        );
-      } catch (e) {
-        const msg = e instanceof ApiError ? e.message : "Upload fehlgeschlagen.";
-        setGlobalError(msg);
-        setRows((prev) =>
-          prev.map((r) => {
-            const target = newRows.find((n) => n.id === r.id);
-            if (!target) return r;
-            const iv = intervals.current[r.id];
-            if (iv) {
-              clearInterval(iv);
-              delete intervals.current[r.id];
-            }
-            return { ...r, state: "error", progress: 100, detail: msg };
-          })
-        );
-      } finally {
-        setBusy(false);
-      }
-    },
-    [startProgress]
-  );
+  const push = (id: string, t: ReturnType<typeof setTimeout>) => {
+    (timers.current[id] = timers.current[id] || []).push(t);
+  };
+
+  const runPipeline = useCallback((row: Row) => {
+    const { id, file } = row;
+
+    // Schritte 1→3 vorab durchlaufen, bei Schritt 3 ("KI analysiert") warten.
+    const advance = (target: number, delay: number) => {
+      const t = setTimeout(() => {
+        patch(id, (r) => (r.status === "running" && r.stepIndex < target ? { ...r, stepIndex: target } : r));
+      }, delay);
+      push(id, t);
+    };
+    advance(1, 500);
+    advance(2, 1100);
+    advance(3, 1700);
+
+    const finish = () => {
+      const t1 = setTimeout(() => patch(id, (r) => ({ ...r, stepIndex: 4 })), 200);
+      const t2 = setTimeout(() => patch(id, (r) => ({ ...r, stepIndex: 5, status: "done" })), 400);
+      push(id, t1);
+      push(id, t2);
+    };
+
+    const fail = (detail: string) => {
+      clearTimers(id);
+      patch(id, (r) => ({ ...r, status: "error", errorStep: r.stepIndex, detail }));
+    };
+
+    flowcheckApi
+      .upload([file])
+      .then(([res]) => {
+        if (res && res.status !== "ok" && res.status !== undefined) {
+          fail(res.detail || "Verarbeitung fehlgeschlagen");
+        } else {
+          patch(id, (r) => (r.stepIndex < 3 ? { ...r, stepIndex: 3 } : r));
+          finish();
+        }
+      })
+      .catch((e) => fail(e instanceof ApiError ? e.message : "Upload fehlgeschlagen"));
+  }, [clearTimers]);
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -128,13 +118,13 @@ export default function UploadPage() {
       const newRows: Row[] = list.map((file) => ({
         id: `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         file,
-        state: "uploading" as const,
-        progress: 0,
+        stepIndex: 0,
+        status: "running" as const,
       }));
       setRows((prev) => [...prev, ...newRows].slice(0, MAX_FILES));
-      void runUpload(newRows);
+      newRows.forEach(runPipeline);
     },
-    [runUpload]
+    [runPipeline]
   );
 
   const onDrop = useCallback(
@@ -147,29 +137,22 @@ export default function UploadPage() {
   );
 
   const removeRow = (id: string) => {
-    const iv = intervals.current[id];
-    if (iv) {
-      clearInterval(iv);
-      delete intervals.current[id];
-    }
+    clearTimers(id);
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
 
   const reset = () => {
-    clearIntervals();
+    clearTimers();
     setRows([]);
-    setGlobalError(null);
   };
 
-  const doneCount = rows.filter((r) => r.state === "done").length;
-  const allFinished = rows.length > 0 && rows.every((r) => r.state === "done" || r.state === "error");
+  const busy = rows.some((r) => r.status === "running");
+  const doneCount = rows.filter((r) => r.status === "done").length;
+  const allFinished = rows.length > 0 && rows.every((r) => r.status !== "running");
 
   return (
     <div className="fc-fade-in">
-      <PageHeader
-        title="Upload"
-        description="Rechnungen hochladen und automatisch verarbeiten lassen"
-      />
+      <PageHeader title="Upload" description="Rechnungen hochladen und automatisch verarbeiten lassen" />
 
       <div
         onDragOver={(e) => {
@@ -215,28 +198,19 @@ export default function UploadPage() {
         </p>
       </div>
 
-      {globalError && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {globalError}
-        </div>
-      )}
-
       {rows.length > 0 && (
         <div className="mt-6 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
           <div className="flex items-center justify-between border-b border-[rgba(0,56,86,0.06)] px-6 py-4">
             <h2 className="text-xl font-semibold text-[#1a1a2e]">
               {rows.length} {rows.length === 1 ? "Datei" : "Dateien"}
               {doneCount > 0 && (
-                <span className="ml-2 text-sm font-medium text-emerald-600">
-                  · {doneCount} verarbeitet
-                </span>
+                <span className="ml-2 text-sm font-medium text-emerald-600">· {doneCount} verarbeitet</span>
               )}
             </h2>
             <button
               onClick={reset}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5 active:scale-95 disabled:opacity-50"
             >
               <RotateCcw className="h-4 w-4" />
               Weitere hochladen
@@ -245,7 +219,7 @@ export default function UploadPage() {
 
           <ul className="divide-y divide-[rgba(0,56,86,0.06)]">
             {rows.map((r) => (
-              <li key={r.id} className="flex items-center gap-4 px-6 py-4">
+              <li key={r.id} className="flex items-start gap-4 px-6 py-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf9f7] text-[#003856]">
                   <FileText className="h-5 w-5" />
                 </div>
@@ -254,44 +228,64 @@ export default function UploadPage() {
                     <p className="truncate text-sm font-medium text-[#1a1a2e]">{r.file.name}</p>
                     <span className="shrink-0 text-xs text-[#64748b]">{fileSize(r.file.size)}</span>
                   </div>
-                  <div className="mt-2 flex items-center gap-3">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[rgba(0,56,86,0.08)]">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          r.state === "error"
-                            ? "bg-red-500"
-                            : r.state === "done"
-                              ? "bg-emerald-500"
-                              : "bg-[#003856]"
-                        }`}
-                        style={{ width: `${r.progress}%` }}
-                      />
-                    </div>
-                    <span
-                      className={`flex shrink-0 items-center gap-1.5 text-xs font-medium ${
-                        r.state === "error"
-                          ? "text-red-600"
-                          : r.state === "done"
-                            ? "text-emerald-600"
-                            : "text-[#64748b]"
-                      }`}
-                    >
-                      {r.state === "done" && <CheckCircle2 className="h-4 w-4" />}
-                      {r.state === "error" && <AlertCircle className="h-4 w-4" />}
-                      {(r.state === "uploading" || r.state === "processing") && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                      {r.state === "done" ? "Fertig ✅" : STATE_LABEL[r.state]}
-                    </span>
-                  </div>
-                  {r.state === "error" && r.detail && (
-                    <p className="mt-1.5 text-xs text-red-600">{r.detail}</p>
+
+                  {/* Pipeline */}
+                  <ul className="mt-3 flex flex-col gap-1.5">
+                    {STEPS.map((step, i) => {
+                      const Icon = step.icon;
+                      const isError = r.status === "error" && r.errorStep === i;
+                      const isDone = !isError && (r.status === "done" || i < r.stepIndex);
+                      const isActive = !isError && !isDone && r.status === "running" && i === r.stepIndex;
+                      return (
+                        <li key={i} className="flex items-center gap-2.5">
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                              isError
+                                ? "bg-red-100 text-red-600"
+                                : isDone
+                                  ? "bg-emerald-100 text-emerald-600"
+                                  : isActive
+                                    ? "bg-[#003856]/10 text-[#003856]"
+                                    : "bg-[#faf9f7] text-[#cbd5e1]"
+                            }`}
+                          >
+                            {isError ? (
+                              <AlertCircle className="h-3.5 w-3.5" />
+                            ) : isDone ? (
+                              <Check className="fc-pop h-3.5 w-3.5" />
+                            ) : isActive ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Icon className="h-3.5 w-3.5" />
+                            )}
+                          </span>
+                          <span
+                            className={`text-xs ${
+                              isError
+                                ? "font-medium text-red-600"
+                                : isDone
+                                  ? "text-[#1a1a2e]"
+                                  : isActive
+                                    ? "font-medium text-[#003856]"
+                                    : "text-[#94a3b8]"
+                            }`}
+                          >
+                            {step.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {r.status === "error" && r.detail && (
+                    <p className="mt-2 text-xs text-red-600">{r.detail}</p>
                   )}
                 </div>
-                {(r.state === "done" || r.state === "error") && (
+
+                {r.status !== "running" && (
                   <button
                     onClick={() => removeRow(r.id)}
-                    className="shrink-0 rounded-lg p-1 text-[#64748b] transition hover:bg-[#faf9f7] hover:text-red-600"
+                    className="shrink-0 rounded-lg p-1 text-[#64748b] transition hover:bg-[#faf9f7] hover:text-red-600 active:scale-95"
                     aria-label="Entfernen"
                   >
                     <X className="h-4 w-4" />
@@ -305,7 +299,7 @@ export default function UploadPage() {
             <div className="flex items-center justify-end gap-3 border-t border-[rgba(0,56,86,0.06)] px-6 py-4">
               <Link
                 href="/rechnungen"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 font-medium text-white transition-all hover:bg-[#002a42]"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
               >
                 Zu den Rechnungen →
               </Link>

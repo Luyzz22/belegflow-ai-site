@@ -1,12 +1,107 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Check, X } from "lucide-react";
+import { Check, X, CheckCircle2, Loader2 } from "lucide-react";
 import { flowcheckApi, ApiError, type Freigabe } from "@/lib/api-client";
 import { eur, dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
-import { ErrorState, EmptyState, TableSkeleton, Spinner } from "@/components/States";
+import Toast from "@/components/Toast";
+import { ErrorState, EmptyState, Skeleton } from "@/components/States";
+
+type ToastState = { type: "success" | "error"; text: string } | null;
+
+function FreigabeCard({
+  f,
+  busy,
+  onApprove,
+  onReject,
+}: {
+  f: Freigabe;
+  busy: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startX = useRef(0);
+
+  const onStart = (e: React.TouchEvent) => {
+    setDragging(true);
+    startX.current = e.touches[0].clientX;
+  };
+  const onMove = (e: React.TouchEvent) => {
+    if (!dragging) return;
+    const d = e.touches[0].clientX - startX.current;
+    setDx(Math.max(-120, Math.min(120, d)));
+  };
+  const onEnd = () => {
+    setDragging(false);
+    if (dx > 80) onApprove();
+    else if (dx < -80) onReject();
+    setDx(0);
+  };
+
+  const ref = f.rechnungsnummer || `RE #${f.invoice_id}`;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl">
+      {/* Swipe-Hinweise */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-5">
+        <span className={`text-emerald-600 transition-opacity ${dx > 20 ? "opacity-100" : "opacity-0"}`}>
+          <Check className="h-6 w-6" />
+        </span>
+        <span className={`text-red-600 transition-opacity ${dx < -20 ? "opacity-100" : "opacity-0"}`}>
+          <X className="h-6 w-6" />
+        </span>
+      </div>
+
+      <div
+        onTouchStart={onStart}
+        onTouchMove={onMove}
+        onTouchEnd={onEnd}
+        style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : "transform 0.25s ease" }}
+        className="fc-lift rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)]"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            href={`/rechnungen/${f.invoice_id}`}
+            className="truncate font-semibold text-[#1a1a2e] transition hover:text-[#003856]"
+          >
+            {f.lieferant || "—"}
+          </Link>
+          <span className="shrink-0 rounded-lg bg-[#c8985a]/15 px-2 py-0.5 text-xs font-semibold text-[#8a6526]">
+            Stufe {f.stufe}
+          </span>
+        </div>
+
+        <p className="mt-3 text-2xl font-bold tabular-nums text-[#003856]">{eur(f.betrag)}</p>
+        <p className="mt-1 text-xs text-[#64748b]">
+          {ref} · {dateDE(f.erstellt_am, true)}
+        </p>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={onApprove}
+            disabled={busy}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 font-semibold text-white transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Freigeben
+          </button>
+          <button
+            onClick={onReject}
+            disabled={busy}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 py-2.5 font-medium text-red-600 transition-all hover:bg-red-50 active:scale-95 disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+            Ablehnen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function FreigabenPage() {
   const [items, setItems] = useState<Freigabe[]>([]);
@@ -15,7 +110,7 @@ export default function FreigabenPage() {
   const [actingId, setActingId] = useState<number | null>(null);
   const [rejectFor, setRejectFor] = useState<Freigabe | null>(null);
   const [grund, setGrund] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
 
   const load = useCallback(() => {
     flowcheckApi
@@ -38,50 +133,46 @@ export default function FreigabenPage() {
     void load();
   }, [load]);
 
-  const flash = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  };
-
-  const approve = async (f: Freigabe) => {
+  const approve = (f: Freigabe) => {
     setActingId(f.id);
-    try {
-      await flowcheckApi.approve(f.id);
-      setItems((prev) => prev.filter((x) => x.id !== f.id));
-      flash(`Freigabe für ${f.lieferant} genehmigt`);
-    } catch (e) {
-      flash(e instanceof Error ? e.message : "Aktion fehlgeschlagen");
-    } finally {
-      setActingId(null);
-    }
+    flowcheckApi
+      .approve(f.id)
+      .then(() => {
+        setItems((prev) => prev.filter((x) => x.id !== f.id));
+        setToast({ type: "success", text: `Freigabe für ${f.lieferant} genehmigt` });
+      })
+      .catch((e) => setToast({ type: "error", text: e instanceof ApiError ? e.message : "Aktion fehlgeschlagen" }))
+      .finally(() => setActingId(null));
   };
 
-  const confirmReject = async () => {
+  const confirmReject = () => {
     if (!rejectFor) return;
     const f = rejectFor;
     setActingId(f.id);
-    try {
-      await flowcheckApi.reject(f.id, grund.trim() || "Kein Grund angegeben");
-      setItems((prev) => prev.filter((x) => x.id !== f.id));
-      flash(`Freigabe für ${f.lieferant} abgelehnt`);
-      setRejectFor(null);
-      setGrund("");
-    } catch (e) {
-      flash(e instanceof Error ? e.message : "Aktion fehlgeschlagen");
-    } finally {
-      setActingId(null);
-    }
+    flowcheckApi
+      .reject(f.id, grund.trim() || "Kein Grund angegeben")
+      .then(() => {
+        setItems((prev) => prev.filter((x) => x.id !== f.id));
+        setToast({ type: "success", text: `Freigabe für ${f.lieferant} abgelehnt` });
+        setRejectFor(null);
+        setGrund("");
+      })
+      .catch((e) => setToast({ type: "error", text: e instanceof ApiError ? e.message : "Aktion fehlgeschlagen" }))
+      .finally(() => setActingId(null));
   };
 
   return (
     <div className="fc-fade-in">
-      <PageHeader
-        title="Freigaben"
-        description="Ausstehende Rechnungsfreigaben"
-      />
+      {toast && <Toast type={toast.type} text={toast.text} onClose={() => setToast(null)} />}
+
+      <PageHeader title="Freigaben" description="Ausstehende Rechnungsfreigaben" />
 
       {loading ? (
-        <TableSkeleton rows={5} cols={5} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-44 w-full rounded-2xl" />
+          ))}
+        </div>
       ) : error ? (
         <ErrorState message={error} onRetry={retry} />
       ) : items.length === 0 ? (
@@ -91,70 +182,16 @@ export default function FreigabenPage() {
           description="Alle Rechnungen sind bearbeitet."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
-                  <th className="px-6 py-4">Lieferant</th>
-                  <th className="px-6 py-4 text-right">Betrag</th>
-                  <th className="px-6 py-4">Stufe</th>
-                  <th className="px-6 py-4">Erstellt</th>
-                  <th className="px-6 py-4 text-right">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
-                {items.map((f) => (
-                  <tr key={f.id} className="transition hover:bg-[#faf9f7]">
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/rechnungen/${f.invoice_id}`}
-                        className="font-medium text-[#1a1a2e] transition hover:text-[#003856]"
-                      >
-                        {f.lieferant || "—"}
-                      </Link>
-                      <p className="mt-0.5 text-xs text-[#64748b]">Rechnung #{f.invoice_id}</p>
-                    </td>
-                    <td className="px-6 py-4 text-right font-semibold tabular-nums text-[#003856]">
-                      {eur(f.betrag)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-lg bg-[#003856]/5 px-2.5 py-1 text-xs font-semibold text-[#003856]">
-                        Stufe {f.stufe}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-[#64748b]">
-                      {dateDE(f.erstellt_am, true)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setRejectFor(f)}
-                          disabled={actingId === f.id}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 disabled:opacity-50"
-                        >
-                          <X className="h-4 w-4" />
-                          Ablehnen
-                        </button>
-                        <button
-                          onClick={() => approve(f)}
-                          disabled={actingId === f.id}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
-                        >
-                          {actingId === f.id ? (
-                            <Spinner className="h-4 w-4 text-white" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                          Freigeben
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((f) => (
+            <FreigabeCard
+              key={f.id}
+              f={f}
+              busy={actingId === f.id}
+              onApprove={() => approve(f)}
+              onReject={() => setRejectFor(f)}
+            />
+          ))}
         </div>
       )}
 
@@ -181,26 +218,20 @@ export default function FreigabenPage() {
             <div className="mt-5 flex justify-end gap-3">
               <button
                 onClick={() => setRejectFor(null)}
-                className="rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5"
+                className="rounded-xl px-5 py-2.5 font-medium text-[#003856] transition-all hover:bg-[#003856]/5 active:scale-95"
               >
                 Abbrechen
               </button>
               <button
                 onClick={confirmReject}
                 disabled={actingId === rejectFor.id}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
               >
-                {actingId === rejectFor.id && <Spinner className="h-4 w-4 text-white" />}
+                {actingId === rejectFor.id && <Loader2 className="h-4 w-4 animate-spin" />}
                 Ablehnen
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-[#003856] px-4 py-2.5 text-sm font-medium text-white shadow-lg">
-          {toast}
         </div>
       )}
     </div>
