@@ -102,3 +102,29 @@ body {
 /* Interactive card lift */
 .fc-lift { transition: all 0.2s ease; }
 .fc-lift:hover { box-shadow: 0 8px 24px rgba(0, 56, 86, 0.1); transform: translateY(-2px); }
+
+/* Konfetti */
+@keyframes fc-confetti-fall {
+  0% { opacity: 0; transform: translateY(-10%) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(420px) rotate(540deg); }
+}
+.fc-confetti { animation: fc-confetti-fall ease-in forwards; }
+
+/* Review-Mode Slide-Übergänge */
+@keyframes fc-slide-out-left {
+  to { opacity: 0; transform: translateX(-60px); }
+}
+@keyframes fc-slide-in-right {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.fc-slide-out-left { animation: fc-slide-out-left 0.28s ease-in forwards; }
+.fc-slide-in-right { animation: fc-slide-in-right 0.3s ease-out both; }
+
+/* Command-Palette Scale-in */
+@keyframes fc-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.fc-scale-in { animation: fc-scale-in 0.16s ease-out both; }
