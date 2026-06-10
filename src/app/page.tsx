@@ -11,11 +11,15 @@ import {
   ShieldCheck,
   FileCheck,
   MapPin,
+  Lock,
+  Server,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import PublicNav from "@/components/PublicNav";
 import Footer from "@/components/Footer";
+import LiveCounter from "@/components/landing/LiveCounter";
+import Faq from "@/components/landing/Faq";
 
 const FEATURES: { icon: LucideIcon; title: string; desc: string }[] = [
   {
@@ -104,6 +108,13 @@ const TRUST: { icon: LucideIcon; label: string }[] = [
   { icon: Landmark, label: "DATEV-Export" },
 ];
 
+const TRUST_CARDS: { icon: LucideIcon; title: string; desc: string }[] = [
+  { icon: ShieldCheck, title: "DSGVO-konform", desc: "AVV inklusive, Verarbeitung nach EU-Recht." },
+  { icon: FileCheck, title: "GoBD-ready", desc: "Revisionssichere, unveränderbare Ablage." },
+  { icon: Lock, title: "TLS-verschlüsselt", desc: "256-Bit-Verschlüsselung für alle Daten." },
+  { icon: Server, title: "Hosting in Deutschland", desc: "Ausschließlich deutsche Rechenzentren." },
+];
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#f8f6f3]">
@@ -145,6 +156,7 @@ export default function HomePage() {
               </span>
             ))}
           </div>
+          <LiveCounter />
         </div>
       </section>
 
@@ -191,9 +203,13 @@ export default function HomePage() {
               className="absolute left-1/2 top-6 hidden h-px w-2/3 -translate-x-1/2 bg-[rgba(0,56,86,0.12)] md:block"
               aria-hidden
             />
-            {STEPS.map(({ num, icon: Icon, title, desc }) => (
-              <div key={num} className="relative flex flex-col items-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003856] text-lg font-bold text-white ring-8 ring-[#faf9f7]">
+            {STEPS.map(({ num, icon: Icon, title, desc }, i) => (
+              <div
+                key={num}
+                className="fc-rise group relative flex flex-col items-center"
+                style={{ animationDelay: `${i * 150}ms` }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003856] text-lg font-bold text-white ring-8 ring-[#faf9f7] transition-transform group-hover:scale-105">
                   {num}
                 </div>
                 <div className="mt-5 flex items-center gap-2 font-semibold text-[#1a1a2e]">
@@ -267,6 +283,43 @@ export default function HomePage() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </p>
+      </section>
+
+      {/* Trust & Sicherheit */}
+      <section className="border-y border-[rgba(0,56,86,0.08)] bg-[#faf9f7] py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">
+              Vertrauen &amp; Sicherheit
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">
+              Entwickelt für deutsche Compliance-Anforderungen
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST_CARDS.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-all hover:shadow-md"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-[#1a1a2e]">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#64748b]">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+        <div className="text-center">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">FAQ</p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">Häufige Fragen</h2>
+        </div>
+        <Faq />
       </section>
 
       {/* Final CTA band */}
