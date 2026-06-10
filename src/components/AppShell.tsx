@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Upload,
+  Zap,
   FileText,
   CheckCircle2,
   Building2,
@@ -18,12 +19,14 @@ import {
   PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
+import { flowcheckApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Brand";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Upload", icon: Upload },
+  { href: "/review", label: "Review", icon: Zap },
   { href: "/rechnungen", label: "Rechnungen", icon: FileText },
   { href: "/freigaben", label: "Freigaben", icon: CheckCircle2 },
   { href: "/lieferanten", label: "Lieferanten", icon: Building2 },
@@ -47,6 +50,7 @@ function SidebarPanel({
   collapsed,
   pathname,
   user,
+  reviewCount,
   onLogout,
   onNavigate,
   onToggleCollapse,
@@ -54,6 +58,7 @@ function SidebarPanel({
   collapsed: boolean;
   pathname: string;
   user: { name?: string; email?: string; role?: string } | null;
+  reviewCount: number;
   onLogout: () => void;
   onNavigate?: () => void;
   onToggleCollapse?: () => void;
@@ -91,7 +96,16 @@ function SidebarPanel({
                 <span className="fc-indicator absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#c8985a]" />
               )}
               <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="flex-1">{item.label}</span>}
+              {item.href === "/review" && reviewCount > 0 && (
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ffb900] px-1.5 text-[11px] font-bold text-[#003856] ${
+                    collapsed ? "absolute right-1 top-1" : ""
+                  }`}
+                >
+                  {reviewCount}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -156,6 +170,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  // Badge: Anzahl der zur Prüfung offenen Rechnungen (Status "verarbeitet").
+  useEffect(() => {
+    flowcheckApi
+      .invoices("status=verarbeitet")
+      .then((r) => setReviewCount((r.items || []).filter((i) => i.status === "verarbeitet").length))
+      .catch(() => setReviewCount(0));
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-[#f8f6f3]">
@@ -169,6 +192,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           collapsed={collapsed}
           pathname={pathname}
           user={user}
+          reviewCount={reviewCount}
           onLogout={logout}
           onToggleCollapse={() => setCollapsed((v) => !v)}
         />
@@ -183,6 +207,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               collapsed={false}
               pathname={pathname}
               user={user}
+              reviewCount={reviewCount}
               onLogout={logout}
               onNavigate={() => setMobileOpen(false)}
             />
