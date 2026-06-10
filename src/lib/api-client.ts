@@ -170,6 +170,7 @@ export interface Freigabe {
   invoice_id: number;
   betrag: number;
   lieferant: string;
+  rechnungsnummer?: string;
   stufe: string;
   status: string;
   erstellt_am: string;

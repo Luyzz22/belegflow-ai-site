@@ -83,12 +83,13 @@ function SidebarPanel({
               href={item.href}
               onClick={onNavigate}
               title={collapsed ? item.label : undefined}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                active
-                  ? "bg-white/10 text-white shadow-[inset_2px_0_0_#c8985a]"
-                  : "text-white/65 hover:bg-white/5 hover:text-white"
+              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                active ? "bg-white/10 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"
               } ${collapsed ? "justify-center" : ""}`}
             >
+              {active && (
+                <span className="fc-indicator absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#c8985a]" />
+              )}
               <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
               {!collapsed && <span>{item.label}</span>}
             </Link>

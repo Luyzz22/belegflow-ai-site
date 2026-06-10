@@ -76,3 +76,29 @@ body {
   background-image: radial-gradient(rgba(0, 56, 86, 0.06) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
+/* Toast: slide-in from right */
+@keyframes fc-toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.fc-toast { animation: fc-toast-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Checkmark/step pop: scale-in + fade */
+@keyframes fc-pop {
+  0% { opacity: 0; transform: scale(0.4); }
+  70% { transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.fc-pop { animation: fc-pop 0.3s ease-out both; }
+
+/* Sidebar active indicator: vertical slide-in */
+@keyframes fc-indicator {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.fc-indicator { animation: fc-indicator 0.2s ease-out both; transform-origin: center; }
+
+/* Interactive card lift */
+.fc-lift { transition: all 0.2s ease; }
+.fc-lift:hover { box-shadow: 0 8px 24px rgba(0, 56, 86, 0.1); transform: translateY(-2px); }

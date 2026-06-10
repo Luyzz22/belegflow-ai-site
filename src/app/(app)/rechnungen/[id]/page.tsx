@@ -16,7 +16,7 @@ import {
   Download,
   Loader2,
 } from "lucide-react";
-import { flowcheckApi, ApiError, type InvoiceDetail } from "@/lib/api-client";
+import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -73,6 +73,36 @@ export default function InvoiceDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("validierung");
   const [actionBusy, setActionBusy] = useState<null | "approve" | "reject" | "export">(null);
   const [flash, setFlash] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  // PDF-Vorschau laden (Bearer-Token nötig, daher Blob statt direkter iframe-src).
+  // Liefert das Backend 404 (Endpoint noch nicht deployed / kein Dokument),
+  // bleibt der Platzhalter sichtbar.
+  useEffect(() => {
+    if (invalidId) return;
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    const token = getToken();
+    fetch(`${API_BASE}/invoices/${id}/pdf`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPdfUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setPdfUrl(null);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [id, invalidId]);
 
   const load = useCallback(() => {
     if (invalidId) return;
@@ -232,15 +262,23 @@ export default function InvoiceDetailPage() {
         {/* Vorschau */}
         <section className={CARD}>
           <h2 className="mb-4 text-xl font-semibold text-[#1a1a2e]">Vorschau</h2>
-          <div className="flex h-[calc(100%-2.75rem)] min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[rgba(0,56,86,0.15)] bg-[#faf9f7] p-10 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#003856]/5 text-[#003856]">
-              <FileText className="h-7 w-7" />
+          {pdfUrl ? (
+            <iframe
+              src={pdfUrl}
+              title={`Rechnung ${detailData.rechnungsnummer || detailData.id} — PDF-Vorschau`}
+              className="h-[28rem] w-full rounded-xl border border-[rgba(0,56,86,0.08)] bg-white"
+            />
+          ) : (
+            <div className="flex h-[calc(100%-2.75rem)] min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[rgba(0,56,86,0.15)] bg-[#faf9f7] p-10 text-center">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#003856]/5 text-[#003856]">
+                <FileText className="h-7 w-7" />
+              </div>
+              <p className="text-sm font-medium text-[#1a1a2e]">Keine PDF-Vorschau verfügbar</p>
+              <p className="mt-1 text-xs text-[#64748b]">
+                Für diese Rechnung liegt kein Dokument zur Anzeige vor.
+              </p>
             </div>
-            <p className="text-sm font-medium text-[#1a1a2e]">Keine PDF-Vorschau verfügbar</p>
-            <p className="mt-1 text-xs text-[#64748b]">
-              Für diese Rechnung liegt kein Dokument zur Anzeige vor.
-            </p>
-          </div>
+          )}
         </section>
       </div>
 
