@@ -24,6 +24,7 @@ import { eur, dateDE, pct } from "@/lib/format";
 import { computeConfidence } from "@/lib/confidence";
 import StatusBadge from "@/components/StatusBadge";
 import ConfidenceRing from "@/components/ConfidenceRing";
+import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toast from "@/components/Toast";
 import { LoadingState, ErrorState } from "@/components/States";
 
@@ -119,20 +120,19 @@ export default function InvoiceDetailPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [editingK, setEditingK] = useState(false);
   const [formK, setFormK] = useState({ konto: "", gegenkonto: "", steuerschluessel: "" });
-  const [knownSuppliers, setKnownSuppliers] = useState<Set<string>>(new Set());
+  const [supplierCounts, setSupplierCounts] = useState<Map<string, number>>(new Map());
+  const [breakdownOverride, setBreakdownOverride] = useState<boolean | null>(null);
 
-  // Bekannte Lieferanten für den Konfidenz-Score (Lieferant mit >1 Rechnung).
+  // Lieferanten-Historie für den Konfidenz-Score (Name → Anzahl Rechnungen).
   useEffect(() => {
     flowcheckApi
       .lieferanten()
       .then((r) => {
-        const set = new Set<string>();
-        (r.items || []).forEach((l) => {
-          if (l.anzahl_rechnungen > 1) set.add(l.name);
-        });
-        setKnownSuppliers(set);
+        const m = new Map<string, number>();
+        (r.items || []).forEach((l) => m.set(l.name, l.anzahl_rechnungen));
+        setSupplierCounts(m);
       })
-      .catch(() => setKnownSuppliers(new Set()));
+      .catch(() => setSupplierCounts(new Map()));
   }, []);
 
   // PDF-Vorschau laden (Bearer-Token nötig, daher Blob statt direkter iframe-src).
@@ -264,7 +264,13 @@ export default function InvoiceDetailPage() {
   const pflicht = view.validierung?.pflichtangaben ?? [];
   const anomalien = view.anomalien ?? [];
   const summeOk = Math.abs((view.netto || 0) + (view.ust_betrag || 0) - (view.betrag || 0)) <= 0.01;
-  const confidence = computeConfidence(view, { supplierKnown: knownSuppliers.has(view.lieferant) });
+  const supplierCount = supplierCounts.get(view.lieferant) ?? 0;
+  const confidence = computeConfidence(view, {
+    supplierKnown: supplierCount > 1,
+    supplierCount,
+  });
+  // Breakdown auto-offen wenn Score < 90 %, manuell per Ring-Klick umschaltbar.
+  const breakdownOpen = breakdownOverride ?? confidence.score < 90;
 
   const startEdit = () => {
     setForm({
@@ -317,6 +323,16 @@ export default function InvoiceDetailPage() {
 
   const setFormField = (k: string) => (v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  const onConfidenceAction = (action: "fields" | "kontierung") => {
+    if (action === "kontierung") {
+      setActiveTab("kontierung");
+      startEditK();
+    } else {
+      startEdit();
+    }
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="fc-fade-in pb-6">
       {flash && <Toast type={flash.type} text={flash.text} onClose={() => setFlash(null)} />}
@@ -335,9 +351,20 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
         <div className="shrink-0 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-3 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
-          <ConfidenceRing result={confidence} size={108} />
+          <ConfidenceRing
+            result={confidence}
+            size={108}
+            onClick={() => setBreakdownOverride(!breakdownOpen)}
+          />
         </div>
       </div>
+
+      {/* Konfidenz-Aufschlüsselung */}
+      {breakdownOpen && (
+        <div className="mb-6">
+          <ConfidenceBreakdown result={confidence} onAction={onConfidenceAction} />
+        </div>
+      )}
 
       {/* Split-View: PDF links (sticky) · Felder rechts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

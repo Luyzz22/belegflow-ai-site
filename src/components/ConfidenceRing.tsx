@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TIER_COLOR, type ConfidenceResult } from "@/lib/confidence";
+import { TIER_COLOR, TIER_LABEL, type ConfidenceResult } from "@/lib/confidence";
 
 /** Animierter SVG-Konfidenz-Ring mit hochzählender Prozentzahl. */
 export default function ConfidenceRing({
   result,
   size = 132,
+  onClick,
 }: {
   result: ConfidenceResult;
   size?: number;
+  onClick?: () => void;
 }) {
-  const { score, tier, label } = result;
+  const { score, tier } = result;
   const stroke = 10;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -37,8 +39,16 @@ export default function ConfidenceRing({
   const shown = Math.round(score * progress);
   const offset = circ * (1 - (score / 100) * progress);
 
+  const Wrapper = onClick ? "button" : "div";
+
   return (
-    <div className="flex flex-col items-center text-center">
+    <Wrapper
+      onClick={onClick}
+      className={`flex flex-col items-center text-center ${
+        onClick ? "cursor-pointer transition-transform hover:scale-105 active:scale-95" : ""
+      }`}
+      {...(onClick ? { type: "button" as const, title: "Details anzeigen" } : {})}
+    >
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(0,56,86,0.08)" strokeWidth={stroke} />
@@ -62,8 +72,8 @@ export default function ConfidenceRing({
         </div>
       </div>
       <p className="mt-2 text-sm font-medium" style={{ color }}>
-        {label}
+        {TIER_LABEL[tier]}
       </p>
-    </div>
+    </Wrapper>
   );
 }

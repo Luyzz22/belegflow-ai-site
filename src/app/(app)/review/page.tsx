@@ -24,8 +24,9 @@ import {
   type InvoiceDetail,
 } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
-import { computeConfidence } from "@/lib/confidence";
+import { computeConfidence, confidenceSummary } from "@/lib/confidence";
 import ConfidenceRing from "@/components/ConfidenceRing";
+import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Confetti from "@/components/Confetti";
 import { useToast } from "@/components/toast/ToastProvider";
 import { LoadingState, EmptyState } from "@/components/States";
@@ -44,7 +45,8 @@ export default function ReviewPage() {
 
   const [items, setItems] = useState<InvoiceListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [knownSuppliers, setKnownSuppliers] = useState<Set<string>>(new Set());
+  const [supplierCounts, setSupplierCounts] = useState<Map<string, number>>(new Map());
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const [idx, setIdx] = useState(0);
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
@@ -69,13 +71,11 @@ export default function ReviewPage() {
     flowcheckApi
       .lieferanten()
       .then((r) => {
-        const set = new Set<string>();
-        (r.items || []).forEach((l) => {
-          if (l.anzahl_rechnungen > 1) set.add(l.name);
-        });
-        setKnownSuppliers(set);
+        const m = new Map<string, number>();
+        (r.items || []).forEach((l) => m.set(l.name, l.anzahl_rechnungen));
+        setSupplierCounts(m);
       })
-      .catch(() => setKnownSuppliers(new Set()));
+      .catch(() => setSupplierCounts(new Map()));
   }, []);
 
   const current = items[idx];
@@ -126,16 +126,18 @@ export default function ReviewPage() {
   }, [currentId]);
 
   const ready = !!detail && !!current && detail.id === current.id;
-  const confidence = useMemo(
-    () => (ready && detail ? computeConfidence(detail, { supplierKnown: knownSuppliers.has(detail.lieferant) }) : null),
-    [ready, detail, knownSuppliers]
-  );
+  const confidence = useMemo(() => {
+    if (!ready || !detail) return null;
+    const count = supplierCounts.get(detail.lieferant) ?? 0;
+    return computeConfidence(detail, { supplierKnown: count > 1, supplierCount: count });
+  }, [ready, detail, supplierCounts]);
 
   const done = !loadingList && items.length > 0 && idx >= items.length;
   const avg = times.length ? times.reduce((s, v) => s + v, 0) / times.length : 0;
 
   const advance = useCallback(() => {
     setLeaving(true);
+    setShowBreakdown(false);
     window.setTimeout(() => {
       setIdx((i) => i + 1);
       setLeaving(false);
@@ -280,7 +282,8 @@ export default function ReviewPage() {
   }
 
   const progress = Math.min(idx, items.length);
-  const failing = confidence?.checks.filter((c) => !c.ok) ?? [];
+  const summary = confidence ? confidenceSummary(confidence) : null;
+  const issues = confidence?.checks.filter((c) => c.status !== "pass") ?? [];
 
   return (
     <div className="fc-fade-in">
@@ -328,26 +331,23 @@ export default function ReviewPage() {
           <LoadingState label="Beleg wird geladen …" />
         ) : detail && confidence ? (
           <>
-            {/* Konfidenz-Banner */}
+            {/* Konfidenz-Banner — Text aus den tatsächlichen Checks */}
             <div
               className={`mb-5 flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium ${
-                confidence.tier === "high"
+                summary?.tone === "success"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : confidence.tier === "medium"
+                  : summary?.tone === "warning"
                     ? "border-amber-200 bg-amber-50 text-amber-700"
                     : "border-red-200 bg-red-50 text-red-700"
               }`}
             >
-              {confidence.tier === "high" ? (
+              {summary?.tone === "success" ? (
                 <CheckCircle2 className="h-5 w-5 shrink-0" />
               ) : (
                 <AlertTriangle className="h-5 w-5 shrink-0" />
               )}
               <span>
-                KI-Konfidenz: {confidence.score}% —{" "}
-                {confidence.tier === "high"
-                  ? "Alle Prüfungen bestanden"
-                  : failing.map((f) => f.label).slice(0, 2).join(", ") + " — manuell prüfen"}
+                KI-Konfidenz: {confidence.score}% — {summary?.text}
               </span>
             </div>
 
@@ -383,8 +383,30 @@ export default function ReviewPage() {
                       {detail.rechnungsnummer || "—"} · {dateDE(detail.datum)}
                     </p>
                   </div>
-                  <ConfidenceRing result={confidence} size={104} />
+                  <ConfidenceRing result={confidence} size={104} onClick={() => setShowBreakdown((s) => !s)} />
                 </div>
+
+                {/* Kompakte Issue-Chips + Expand */}
+                {issues.length > 0 && (
+                  <button
+                    onClick={() => setShowBreakdown((s) => !s)}
+                    className="mt-3 flex w-full flex-wrap items-center gap-1.5 rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] px-3 py-2 text-left text-xs transition hover:bg-[#003856]/5"
+                  >
+                    {issues.map((c) => (
+                      <span
+                        key={c.id}
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ${
+                          c.status === "fail" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {c.status === "fail" ? "❌" : "⚠️"} {c.label}
+                      </span>
+                    ))}
+                    <span className="ml-auto font-semibold text-[#003856]">
+                      {showBreakdown ? "Weniger" : "Details"}
+                    </span>
+                  </button>
+                )}
 
                 <dl className="mt-4">
                   {[
@@ -406,6 +428,13 @@ export default function ReviewPage() {
                 </dl>
               </section>
             </div>
+
+            {/* Volle Konfidenz-Aufschlüsselung (expandiert) */}
+            {showBreakdown && (
+              <div className="mt-6">
+                <ConfidenceBreakdown result={confidence} />
+              </div>
+            )}
           </>
         ) : (
           <EmptyState title="Beleg konnte nicht geladen werden." />
