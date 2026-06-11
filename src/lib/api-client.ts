@@ -211,6 +211,18 @@ export interface UploadResult {
   detail?: string;
 }
 
+/** Ein DATEV-Buchungssatz aus /datev/preview. Felder je nach Backend optional;
+ *  zusätzliche Spalten werden generisch unterstützt. */
+export interface DatevBuchung {
+  lieferant?: string;
+  rechnungsnummer?: string;
+  betrag?: number | string;
+  konto?: string | number;
+  gegenkonto?: string | number;
+  steuerschluessel?: string | number;
+  [key: string]: string | number | undefined;
+}
+
 // ─────────────────────────── API-Methoden ───────────────────────────
 
 export const flowcheckApi = {
@@ -282,7 +294,8 @@ export const flowcheckApi = {
   lieferant: (name: string) => api<LieferantDetail>(`/lieferanten/${encodeURIComponent(name)}`),
 
   // DATEV-Export — Endpoints laut Design-Prompt
-  datevPreview: () => api<{ buchungen: Record<string, string | number>[] }>("/datev/preview", { method: "POST" }),
+  datevPreview: () =>
+    api<{ items: DatevBuchung[]; total: number }>("/datev/preview", { method: "POST" }),
 
   // Audit
   audit: (params?: string) => api<AuditList>(`/audit${params ? `?${params}` : ""}`),

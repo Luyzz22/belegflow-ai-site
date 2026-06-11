@@ -178,8 +178,8 @@ export default function FreigabenPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CheckCircle2 className="h-6 w-6" />}
-          title="Keine ausstehenden Freigaben."
-          description="Alle Rechnungen sind bearbeitet."
+          title="Alle Rechnungen wurden geprüft ✅"
+          description="Es liegen aktuell keine offenen Freigaben vor."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

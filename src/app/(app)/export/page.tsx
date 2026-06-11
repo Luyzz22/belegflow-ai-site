@@ -2,14 +2,31 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Download, FileSpreadsheet, CheckCircle2 } from "lucide-react";
-import { flowcheckApi, API_BASE, getToken, ApiError } from "@/lib/api-client";
+import { flowcheckApi, API_BASE, getToken, ApiError, type DatevBuchung } from "@/lib/api-client";
+import { eur } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import { ErrorState, EmptyState, TableSkeleton, Spinner } from "@/components/States";
 
-type Buchung = Record<string, string | number>;
+// Spaltendefinition mit mehreren möglichen Backend-Schlüsseln pro Spalte.
+const COLUMNS: { label: string; keys: string[]; money?: boolean }[] = [
+  { label: "Lieferant", keys: ["lieferant", "Lieferant", "rechnungsaussteller"] },
+  { label: "Rechnungsnr", keys: ["rechnungsnummer", "rechnungsnr", "Rechnungsnummer", "belegfeld1", "belegnr"] },
+  { label: "Betrag", keys: ["betrag", "Betrag", "umsatz", "buchungsbetrag"], money: true },
+  { label: "Konto", keys: ["konto", "Konto"] },
+  { label: "Gegenkonto", keys: ["gegenkonto", "Gegenkonto", "gegen_konto"] },
+  { label: "SK", keys: ["steuerschluessel", "sk", "SK", "bu_schluessel", "buschluessel"] },
+];
+
+function pick(row: DatevBuchung, keys: string[]): string | number | undefined {
+  for (const k of keys) {
+    const v = row[k];
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return undefined;
+}
 
 export default function ExportPage() {
-  const [buchungen, setBuchungen] = useState<Buchung[]>([]);
+  const [buchungen, setBuchungen] = useState<DatevBuchung[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -19,7 +36,7 @@ export default function ExportPage() {
     flowcheckApi
       .datevPreview()
       .then((d) => {
-        setBuchungen(d.buchungen || []);
+        setBuchungen(d.items || []);
         setError(null);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Vorschau konnte nicht geladen werden."))
@@ -66,7 +83,11 @@ export default function ExportPage() {
     }
   };
 
-  const columns = buchungen.length > 0 ? Object.keys(buchungen[0]) : [];
+  // Benannte Spalten verwenden, wenn das Backend bekannte Schlüssel liefert,
+  // sonst generisch alle Felder anzeigen (damit immer Daten sichtbar sind).
+  const useNamed =
+    buchungen.length > 0 && COLUMNS.some((col) => col.keys.some((k) => k in buchungen[0]));
+  const genericCols = buchungen.length > 0 ? Object.keys(buchungen[0]) : [];
 
   return (
     <div className="fc-fade-in">
@@ -77,7 +98,7 @@ export default function ExportPage() {
           <button
             onClick={download}
             disabled={downloading || buchungen.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#FFB900] px-5 py-2.5 font-semibold text-[#003856] transition-all hover:bg-[#e6a800] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#FFB900] px-5 py-2.5 font-semibold text-[#003856] transition-all hover:bg-[#e6a800] active:scale-95 disabled:opacity-50"
           >
             {downloading ? <Spinner className="h-4 w-4 text-[#003856]" /> : <Download className="h-4 w-4" />}
             DATEV-CSV herunterladen
@@ -115,7 +136,7 @@ export default function ExportPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
-                    {columns.map((c) => (
+                    {(useNamed ? COLUMNS.map((c) => c.label) : genericCols).map((c) => (
                       <th key={c} className="whitespace-nowrap px-6 py-4">
                         {c}
                       </th>
@@ -125,11 +146,24 @@ export default function ExportPage() {
                 <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
                   {buchungen.map((b, i) => (
                     <tr key={i} className="transition hover:bg-[#faf9f7]">
-                      {columns.map((c) => (
-                        <td key={c} className="whitespace-nowrap px-6 py-3.5 text-[#1a1a2e]">
-                          {String(b[c] ?? "—")}
-                        </td>
-                      ))}
+                      {useNamed
+                        ? COLUMNS.map((col) => {
+                            const v = pick(b, col.keys);
+                            const display =
+                              col.money && v !== undefined && !Number.isNaN(Number(v))
+                                ? eur(Number(v))
+                                : v ?? "—";
+                            return (
+                              <td key={col.label} className="whitespace-nowrap px-6 py-3.5 text-[#1a1a2e]">
+                                {String(display)}
+                              </td>
+                            );
+                          })
+                        : genericCols.map((c) => (
+                            <td key={c} className="whitespace-nowrap px-6 py-3.5 text-[#1a1a2e]">
+                              {String(b[c] ?? "—")}
+                            </td>
+                          ))}
                     </tr>
                   ))}
                 </tbody>
