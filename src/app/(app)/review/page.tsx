@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Download,
+  Loader2,
   PartyPopper,
   Keyboard,
 } from "lucide-react";
@@ -47,8 +48,12 @@ export default function ReviewPage() {
 
   const [idx, setIdx] = useState(0);
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdf, setPdf] = useState<{ id: number; url: string } | null>(null);
+  const [pdfTried, setPdfTried] = useState<number | null>(null);
   const [leaving, setLeaving] = useState(false);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [grund, setGrund] = useState("");
 
   const [decided, setDecided] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
@@ -74,12 +79,12 @@ export default function ReviewPage() {
   }, []);
 
   const current = items[idx];
+  const currentId = current?.id;
 
-  // Detail + PDF des aktuellen Belegs laden.
+  // Detail des aktuellen Belegs laden.
   useEffect(() => {
     if (!current) return;
     let cancelled = false;
-    let obj: string | null = null;
     flowcheckApi
       .invoice(current.id)
       .then((d) => {
@@ -90,27 +95,35 @@ export default function ReviewPage() {
       .catch(() => {
         if (!cancelled) setDetail(null);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [current]);
+
+  // PDF des aktuellen Belegs laden — bei jedem ID-Wechsel neu (altes Blob revoken).
+  useEffect(() => {
+    if (currentId == null) return;
+    let cancelled = false;
+    let obj: string | null = null;
     const token = getToken();
-    fetch(`${API_BASE}/invoices/${current.id}/pdf`, {
+    fetch(`${API_BASE}/invoices/${currentId}/pdf`, {
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
-      .then((res) => {
-        if (!res.ok) throw new Error(String(res.status));
-        return res.blob();
-      })
+      .then((res) => (res.ok ? res.blob() : null))
       .then((blob) => {
-        if (cancelled) return;
+        if (cancelled || !blob) return;
         obj = URL.createObjectURL(blob);
-        setPdfUrl(obj);
+        setPdf({ id: currentId, url: obj });
       })
-      .catch(() => {
-        if (!cancelled) setPdfUrl(null);
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPdfTried(currentId);
       });
     return () => {
       cancelled = true;
       if (obj) URL.revokeObjectURL(obj);
     };
-  }, [current]);
+  }, [currentId]);
 
   const ready = !!detail && !!current && detail.id === current.id;
   const confidence = useMemo(
@@ -123,7 +136,6 @@ export default function ReviewPage() {
 
   const advance = useCallback(() => {
     setLeaving(true);
-    setPdfUrl(null);
     window.setTimeout(() => {
       setIdx((i) => i + 1);
       setLeaving(false);
@@ -153,16 +165,27 @@ export default function ReviewPage() {
     advance();
   }, [ready, detail, addToast, record, advance]);
 
+  // Öffnet das (non-blocking) Ablehnen-Modal — kein window.prompt mehr.
   const reject = useCallback(() => {
     if (!ready || !detail) return;
-    const grund = window.prompt("Grund für die Ablehnung:");
-    if (grund === null) return;
-    const id = detail.id;
-    void flowcheckApi.reject(id, grund.trim() || "Kein Grund angegeben").catch(() => {});
-    addToast({ type: "warning", text: `Rechnung ${detail.rechnungsnummer || `#${id}`} abgelehnt` });
-    record();
-    advance();
-  }, [ready, detail, addToast, record, advance]);
+    setGrund("");
+    setRejectOpen(true);
+  }, [ready, detail]);
+
+  const doReject = useCallback(
+    (withGrund: boolean) => {
+      if (!detail) return;
+      const id = detail.id;
+      const reason = withGrund ? grund.trim() || "Kein Grund angegeben" : "Kein Grund angegeben";
+      void flowcheckApi.reject(id, reason).catch(() => {});
+      addToast({ type: "warning", text: `Rechnung ${detail.rechnungsnummer || `#${id}`} abgelehnt` });
+      setRejectOpen(false);
+      setGrund("");
+      record();
+      advance();
+    },
+    [detail, grund, addToast, record, advance]
+  );
 
   const skip = useCallback(() => {
     if (leaving) return;
@@ -186,6 +209,11 @@ export default function ReviewPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      // Bei offenem Ablehnen-Modal nur Esc (schließen) erlauben.
+      if (rejectOpen) {
+        if (e.key === "Escape") setRejectOpen(false);
+        return;
+      }
       const k = e.key.toLowerCase();
       if (k === "f") approve();
       else if (k === "a") reject();
@@ -196,7 +224,7 @@ export default function ReviewPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [approve, reject, skip, prev, exportCmd, exit]);
+  }, [approve, reject, skip, prev, exportCmd, exit, rejectOpen]);
 
   // ── Render ──────────────────────────────────────────────
   if (loadingList) return <LoadingState label="Rechnungen werden geladen …" />;
@@ -326,12 +354,17 @@ export default function ReviewPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* PDF */}
               <section className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
-                {pdfUrl ? (
+                {pdf && pdf.id === detail.id ? (
                   <iframe
-                    src={pdfUrl}
+                    src={pdf.url}
                     title={`Rechnung ${detail.rechnungsnummer || detail.id}`}
                     className="h-[60vh] w-full rounded-xl border border-[rgba(0,56,86,0.08)] bg-white"
                   />
+                ) : pdfTried !== detail.id ? (
+                  <div className="flex h-[60vh] flex-col items-center justify-center rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7]">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#003856]/40" />
+                    <p className="mt-3 text-xs text-[#64748b]">Dokument wird geladen …</p>
+                  </div>
                 ) : (
                   <div className="flex h-[60vh] flex-col items-center justify-center rounded-xl border border-dashed border-[rgba(0,56,86,0.15)] bg-[#faf9f7] text-center">
                     <FileText className="mb-3 h-10 w-10 text-[#003856]/40" />
@@ -424,6 +457,52 @@ export default function ReviewPage() {
           <Kbd>F</Kbd> Freigeben · <Kbd>A</Kbd> Ablehnen · <Kbd>→</Kbd> Nächste
         </span>
       </div>
+
+      {/* Ablehnen-Modal (non-blocking, ersetzt window.prompt) */}
+      {rejectOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setRejectOpen(false)} />
+          <div className="fc-scale-in relative w-full max-w-md rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-[#1a1a2e]">Rechnung ablehnen</h2>
+            {detail && (
+              <p className="mt-1 text-sm text-[#64748b]">
+                {detail.lieferant} · {eur(detail.betrag, detail.waehrung)}
+              </p>
+            )}
+            <label className="mt-4 block text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              Grund (optional)
+            </label>
+            <textarea
+              value={grund}
+              onChange={(e) => setGrund(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="z. B. Betrag weicht von Bestellung ab"
+              className="mt-1.5 w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
+            />
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                onClick={() => setRejectOpen(false)}
+                className="rounded-xl px-5 py-2.5 font-medium text-[#64748b] transition hover:bg-[#faf9f7] active:scale-95"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => doReject(false)}
+                className="rounded-xl border border-red-200 px-5 py-2.5 font-medium text-red-600 transition hover:bg-red-50 active:scale-95"
+              >
+                Ohne Grund ablehnen
+              </button>
+              <button
+                onClick={() => doReject(true)}
+                className="rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white transition-all hover:bg-red-700 active:scale-95"
+              >
+                Mit Grund ablehnen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
