@@ -56,6 +56,9 @@ export default function ReviewPage() {
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [grund, setGrund] = useState("");
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
 
   const [decided, setDecided] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
@@ -207,6 +210,27 @@ export default function ReviewPage() {
 
   const exit = useCallback(() => router.push("/dashboard"), [router]);
 
+  // Swipe-Gesten (mobil): rechts = freigeben, links = ablehnen.
+  const onTouchStart = (e: React.TouchEvent) => {
+    dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!dragStart.current) return;
+    const dx = e.touches[0].clientX - dragStart.current.x;
+    const dy = e.touches[0].clientY - dragStart.current.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDragging(true);
+      setDragX(Math.max(-150, Math.min(150, dx)));
+    }
+  };
+  const onTouchEnd = () => {
+    if (dragX > 90) approve();
+    else if (dragX < -90) reject();
+    dragStart.current = null;
+    setDragging(false);
+    setDragX(0);
+  };
+
   // Keyboard-Shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -325,8 +349,27 @@ export default function ReviewPage() {
 
       <div
         key={current?.id}
-        className={leaving ? "fc-slide-out-left" : "fc-slide-in-right"}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={dragging ? { transform: `translateX(${dragX}px)`, transition: "none" } : undefined}
+        className={`relative ${leaving ? "fc-slide-out-left" : "fc-slide-in-right"}`}
       >
+        {/* Swipe-Hinweise (mobil) */}
+        {dragging && (
+          <>
+            <span
+              className={`pointer-events-none absolute left-3 top-3 z-20 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white transition-opacity sm:hidden ${dragX > 30 ? "opacity-100" : "opacity-0"}`}
+            >
+              Freigeben
+            </span>
+            <span
+              className={`pointer-events-none absolute right-3 top-3 z-20 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-bold text-white transition-opacity sm:hidden ${dragX < -30 ? "opacity-100" : "opacity-0"}`}
+            >
+              Ablehnen
+            </span>
+          </>
+        )}
         {!ready ? (
           <LoadingState label="Beleg wird geladen …" />
         ) : detail && confidence ? (
@@ -352,8 +395,8 @@ export default function ReviewPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* PDF */}
-              <section className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+              {/* PDF — auf Mobile ausgeblendet (nur Daten) */}
+              <section className="hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)] lg:block">
                 {pdf && pdf.id === detail.id ? (
                   <iframe
                     src={pdf.url}
@@ -429,11 +472,20 @@ export default function ReviewPage() {
               </section>
             </div>
 
-            {/* Volle Konfidenz-Aufschlüsselung (expandiert) */}
+            {/* Volle Konfidenz-Aufschlüsselung: inline (Desktop) bzw. Bottom-Sheet (mobil) */}
             {showBreakdown && (
-              <div className="mt-6">
-                <ConfidenceBreakdown result={confidence} />
-              </div>
+              <>
+                <div className="mt-6 hidden sm:block">
+                  <ConfidenceBreakdown result={confidence} />
+                </div>
+                <div className="fixed inset-0 z-[80] sm:hidden">
+                  <div className="absolute inset-0 bg-black/50" onClick={() => setShowBreakdown(false)} />
+                  <div className="fc-sheet-up absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-[#f8f6f3] p-4 pb-8">
+                    <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300" />
+                    <ConfidenceBreakdown result={confidence} />
+                  </div>
+                </div>
+              </>
             )}
           </>
         ) : (
@@ -442,20 +494,22 @@ export default function ReviewPage() {
       </div>
 
       {/* Aktionsleiste */}
-      <div className="sticky bottom-4 mt-6 flex items-center justify-center gap-3">
+      <div className="sticky bottom-4 mt-6 flex items-center justify-center gap-2 sm:gap-3">
         <button
           onClick={reject}
           disabled={!ready}
-          className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-red-600 px-5 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50 sm:px-6"
         >
           <X className="h-5 w-5" />
           Ablehnen
-          <Kbd>A</Kbd>
+          <span className="hidden sm:inline-flex">
+            <Kbd>A</Kbd>
+          </span>
         </button>
         <button
           onClick={skip}
           disabled={!ready}
-          className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(0,56,86,0.12)] bg-white px-5 py-3.5 font-medium text-[#003856] shadow-sm transition-all hover:bg-[#faf9f7] active:scale-95 disabled:opacity-50"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl border border-[rgba(0,56,86,0.12)] bg-white px-4 py-3.5 font-medium text-[#003856] shadow-sm transition-all hover:bg-[#faf9f7] active:scale-95 disabled:opacity-50 sm:px-5"
         >
           <ChevronRight className="h-5 w-5" />
           Überspringen
@@ -463,11 +517,13 @@ export default function ReviewPage() {
         <button
           onClick={approve}
           disabled={!ready}
-          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50 sm:px-6"
         >
           <Check className="h-5 w-5" />
           Freigeben
-          <Kbd>F</Kbd>
+          <span className="hidden sm:inline-flex">
+            <Kbd>F</Kbd>
+          </span>
         </button>
       </div>
 

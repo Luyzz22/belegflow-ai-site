@@ -184,6 +184,11 @@ export default function InvoiceDetailPage() {
     void load();
   }, [load]);
 
+  // Präziser Seitentitel mit Rechnungsnummer.
+  useEffect(() => {
+    if (detail?.rechnungsnummer) document.title = `${detail.rechnungsnummer} — FlowCheck AI+`;
+  }, [detail]);
+
   const handleApprove = useCallback(async () => {
     setActionBusy("approve");
     setFlash(null);
