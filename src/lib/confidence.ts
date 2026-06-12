@@ -50,7 +50,12 @@ function hasDuplicate(detail: InvoiceDetail): boolean {
  */
 export function computeConfidence(
   detail: InvoiceDetail,
-  opts?: { supplierKnown?: boolean; supplierCount?: number }
+  opts?: {
+    supplierKnown?: boolean;
+    supplierCount?: number;
+    kontierungHistoryCount?: number;
+    duplicate?: { rechnungsnummer: string; datum: string } | null;
+  }
 ): ConfidenceResult {
   const checks: ConfidenceCheck[] = [];
 
@@ -146,14 +151,21 @@ export function computeConfidence(
   });
 
   // 6) Kein Duplikat (+10)
-  const dup = hasDuplicate(detail);
+  const dupMatch = opts?.duplicate ?? null;
+  const dup = !!dupMatch || hasDuplicate(detail);
   checks.push({
     id: "duplikat",
     label: "Kein Duplikat",
     maxPoints: 10,
     earnedPoints: dup ? 0 : 10,
-    status: dup ? "fail" : "pass",
-    detail: dup ? "Mögliches Duplikat erkannt." : "Keine identische Rechnung gefunden.",
+    status: dup ? "warn" : "pass",
+    detail: dupMatch
+      ? `Ähnliche Rechnung gefunden (${dupMatch.rechnungsnummer} vom ${
+          dupMatch.datum ? new Date(dupMatch.datum).toLocaleDateString("de-DE") : "—"
+        })`
+      : dup
+        ? "Mögliches Duplikat erkannt."
+        : "Keine identische Rechnung gefunden.",
   });
 
   // 7) Kontierung (+10)
@@ -171,7 +183,20 @@ export function computeConfidence(
     action: kontoOk ? undefined : "kontierung",
   });
 
-  const score = checks.reduce((s, c) => s + c.earnedPoints, 0);
+  // 8) Bonus: Kontierung aus Historie (+5)
+  const histCount = opts?.kontierungHistoryCount ?? 0;
+  if (histCount > 0) {
+    checks.push({
+      id: "kontierung_historie",
+      label: "Kontierung aus Historie",
+      maxPoints: 5,
+      earnedPoints: 5,
+      status: "pass",
+      detail: `Kontierung basiert auf ${histCount} vorherigen Buchungen`,
+    });
+  }
+
+  const score = Math.min(100, checks.reduce((s, c) => s + c.earnedPoints, 0));
   const tier = score >= 90 ? "high" : score >= 70 ? "medium" : "low";
   return { score, tier, checks };
 }

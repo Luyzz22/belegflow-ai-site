@@ -18,10 +18,19 @@ import {
   Loader2,
   Pencil,
   Save,
+  PiggyBank,
+  History,
 } from "lucide-react";
 import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
 import { computeConfidence } from "@/lib/confidence";
+import { findDuplicate, type DuplicateMatch } from "@/lib/duplicate";
+import { parseSkonto, type SkontoInfo } from "@/lib/skonto";
+import {
+  getKontierungMemory,
+  recordKontierung,
+  type KontierungMemory,
+} from "@/lib/kontierungMemory";
 import StatusBadge from "@/components/StatusBadge";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
@@ -122,6 +131,10 @@ export default function InvoiceDetailPage() {
   const [formK, setFormK] = useState({ konto: "", gegenkonto: "", steuerschluessel: "" });
   const [supplierCounts, setSupplierCounts] = useState<Map<string, number>>(new Map());
   const [breakdownOverride, setBreakdownOverride] = useState<boolean | null>(null);
+  const [dupMatch, setDupMatch] = useState<DuplicateMatch | null>(null);
+  const [dupIgnored, setDupIgnored] = useState(false);
+  const [skonto, setSkonto] = useState<SkontoInfo | null>(null);
+  const [kontMemory, setKontMemory] = useState<KontierungMemory | null>(null);
 
   // Lieferanten-Historie für den Konfidenz-Score (Name → Anzahl Rechnungen).
   useEffect(() => {
@@ -134,6 +147,32 @@ export default function InvoiceDetailPage() {
       })
       .catch(() => setSupplierCounts(new Map()));
   }, []);
+
+  // Intelligenz pro Beleg: Dublettenprüfung (gleicher Lieferant), Skonto, Kontierungs-Historie.
+  useEffect(() => {
+    if (!detail) return;
+    let cancelled = false;
+    const now = Date.now();
+    const sk = parseSkonto(detail.zahlungsbedingungen, detail.datum, detail.betrag, now);
+    const mem = getKontierungMemory(detail.lieferant);
+    flowcheckApi
+      .lieferant(detail.lieferant)
+      .then((d) => {
+        if (cancelled) return;
+        setDupMatch(findDuplicate(detail, d.rechnungen || []));
+      })
+      .catch(() => {
+        if (!cancelled) setDupMatch(null);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setSkonto(sk);
+        setKontMemory(mem);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail]);
 
   // PDF-Vorschau laden (Bearer-Token nötig, daher Blob statt direkter iframe-src).
   useEffect(() => {
@@ -270,9 +309,14 @@ export default function InvoiceDetailPage() {
   const anomalien = view.anomalien ?? [];
   const summeOk = Math.abs((view.netto || 0) + (view.ust_betrag || 0) - (view.betrag || 0)) <= 0.01;
   const supplierCount = supplierCounts.get(view.lieferant) ?? 0;
+  const kontFromHistory =
+    !!kontMemory && !!view.kontierung?.konto && kontMemory.konto === view.kontierung.konto;
+  const activeDup = dupIgnored ? null : dupMatch;
   const confidence = computeConfidence(view, {
     supplierKnown: supplierCount > 1,
     supplierCount,
+    kontierungHistoryCount: kontFromHistory ? kontMemory?.count : 0,
+    duplicate: activeDup,
   });
   // Breakdown auto-offen wenn Score < 90 %, manuell per Ring-Klick umschaltbar.
   const breakdownOpen = breakdownOverride ?? confidence.score < 90;
@@ -323,7 +367,10 @@ export default function InvoiceDetailPage() {
   const saveEditK = () => {
     setOverrides((prev) => ({ ...prev, kontierung: { ...formK } }));
     setEditingK(false);
-    setFlash({ type: "success", text: "Kontierung aktualisiert." });
+    // Smart-Learning: Kontierung für diesen Lieferanten merken.
+    recordKontierung(view.lieferant, formK);
+    setKontMemory(getKontierungMemory(view.lieferant));
+    setFlash({ type: "success", text: "Kontierung gespeichert & für künftige Rechnungen gemerkt." });
   };
 
   const setFormField = (k: string) => (v: string) => setForm((prev) => ({ ...prev, [k]: v }));
@@ -363,6 +410,88 @@ export default function InvoiceDetailPage() {
           />
         </div>
       </div>
+
+      {/* Duplikat-Warnung */}
+      {activeDup && (
+        <div className="mb-6 rounded-2xl border-l-4 border-amber-400 bg-amber-50 p-5">
+          <div className="flex items-center gap-2 text-amber-800">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <p className="font-semibold">Mögliches Duplikat erkannt</p>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="rounded-xl bg-white/70 p-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-amber-700">Diese Rechnung</p>
+              <p className="mt-1 font-semibold text-[#1a1a2e]">{view.rechnungsnummer || `#${view.id}`}</p>
+              <p className="text-sm text-[#64748b]">{dateDE(view.datum)}</p>
+              <p className="text-sm font-medium text-[#1a1a2e]">{eur(view.betrag, view.waehrung)}</p>
+            </div>
+            <div className="rounded-xl bg-white/70 p-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-amber-700">Verdächtige Rechnung</p>
+              <p className="mt-1 font-semibold text-[#1a1a2e]">{activeDup.rechnungsnummer || `#${activeDup.id}`}</p>
+              <p className="text-sm text-[#64748b]">{dateDE(activeDup.datum)}</p>
+              <p className="text-sm font-medium text-[#1a1a2e]">{eur(activeDup.betrag, activeDup.waehrung)}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={`/rechnungen/${activeDup.id}`}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-95"
+            >
+              Vergleichen
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <button
+              onClick={() => setDupIgnored(true)}
+              className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 active:scale-95"
+            >
+              Kein Duplikat — Ignorieren
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Skonto-Reminder */}
+      {skonto && skonto.tageVerbleibend >= 0 && (
+        <div className="mb-6 rounded-2xl border-l-4 border-emerald-400 bg-emerald-50 p-5">
+          <div className="flex items-center gap-2 text-emerald-800">
+            <PiggyBank className="h-5 w-5 shrink-0" />
+            <p className="font-semibold">Skonto verfügbar!</p>
+          </div>
+          <p className="mt-2 text-sm text-emerald-800">
+            Bei Zahlung bis {dateDE(new Date(skonto.fristMs).toISOString())} sparen Sie{" "}
+            <span className="font-bold">
+              {skonto.prozent}% = {eur(skonto.ersparnis, view.waehrung)}
+            </span>
+            .
+          </p>
+          <div className="mt-3">
+            <div className="mb-1 flex items-center justify-between text-xs text-emerald-800">
+              <span>
+                Verbleibend: {skonto.tageVerbleibend} {skonto.tageVerbleibend === 1 ? "Tag" : "Tage"}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-emerald-100">
+              <div
+                className={`h-full rounded-full ${
+                  skonto.tageVerbleibend > 5
+                    ? "bg-emerald-500"
+                    : skonto.tageVerbleibend >= 2
+                      ? "bg-amber-500"
+                      : "bg-red-500"
+                }`}
+                style={{ width: `${Math.max(5, Math.min(100, (skonto.tageVerbleibend / skonto.tage) * 100))}%` }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => setFlash({ type: "success", text: "Rechnung zur Zahlung vorgemerkt." })}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-emerald-700 active:scale-95"
+          >
+            Zur Zahlung markieren
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Konfidenz-Aufschlüsselung */}
       {breakdownOpen && (
@@ -549,8 +678,19 @@ export default function InvoiceDetailPage() {
                       <p className="mt-1.5 text-xl font-bold text-[#003856]">{view.kontierung?.gegenkonto || "—"}</p>
                     </div>
                   </div>
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#c8985a]/15 px-3 py-1.5 text-sm font-semibold text-[#8a6526]">
-                    Steuerschlüssel: {view.kontierung?.steuerschluessel || "—"}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-[#c8985a]/15 px-3 py-1.5 text-sm font-semibold text-[#8a6526]">
+                      Steuerschlüssel: {view.kontierung?.steuerschluessel || "—"}
+                    </span>
+                    {kontFromHistory && kontMemory && (
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700"
+                        title={`Basierend auf ${kontMemory.count} vorherigen Rechnungen von ${view.lieferant}`}
+                      >
+                        <History className="h-3.5 w-3.5" />
+                        Aus Historie
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

@@ -151,6 +151,8 @@ export interface InvoiceDetail {
   kontierung: Kontierung;
   validierung: Validierung;
   anomalien: Array<{ typ?: string; beschreibung?: string; schwere?: string } | string>;
+  zahlungsbedingungen?: string;
+  faelligkeit?: string;
   created_at: string;
 }
 
