@@ -22,6 +22,7 @@ import {
 import { flowcheckApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Brand";
+import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -180,8 +181,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       .catch(() => setReviewCount(0));
   }, [pathname]);
 
+  // Dynamischer Seitentitel.
+  useEffect(() => {
+    const segs = pathname.split("/").filter(Boolean);
+    const last = segs[segs.length - 1] || "dashboard";
+    const label = ROUTE_LABELS[last] || decodeURIComponent(last);
+    document.title = `${label} — FlowCheck AI+`;
+  }, [pathname]);
+
   return (
     <div className="min-h-screen bg-[#f8f6f3]">
+      {/* Route-Progress-Bar oben */}
+      <div key={pathname} className="fc-route-progress fixed left-0 top-0 z-[200] h-0.5 bg-[#003856]" />
       {/* Desktop sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 md:block ${
@@ -231,7 +242,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+          <Breadcrumbs />
+          {children}
+        </main>
       </div>
     </div>
   );

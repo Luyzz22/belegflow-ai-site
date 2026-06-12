@@ -128,3 +128,19 @@ body {
   to { opacity: 1; transform: scale(1); }
 }
 .fc-scale-in { animation: fc-scale-in 0.16s ease-out both; }
+
+/* Top-Bar Route-Progress (YouTube/GitHub-Stil) */
+@keyframes fc-route-progress {
+  0% { width: 0; opacity: 1; }
+  60% { width: 75%; }
+  90% { width: 92%; opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+.fc-route-progress { animation: fc-route-progress 0.7s ease-out forwards; }
+
+/* Bottom-Sheet (mobile) */
+@keyframes fc-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.fc-sheet-up { animation: fc-sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
