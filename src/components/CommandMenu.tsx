@@ -130,6 +130,9 @@ export default function CommandMenu() {
       { id: "p-exp", group: "Seiten", label: "DATEV-Export", icon: Landmark, run: () => go("/export") },
       { id: "p-audit", group: "Seiten", label: "Audit-Trail", icon: ScrollText, run: () => go("/audit") },
       { id: "p-analytics", group: "Seiten", label: "Analytics öffnen", icon: BarChart3, run: () => go("/analytics") },
+      { id: "p-roi", group: "Seiten", label: "ROI-Rechner", icon: BarChart3, run: () => go("/roi") },
+      { id: "p-compliance", group: "Seiten", label: "Compliance-Center", icon: BarChart3, run: () => go("/compliance-center") },
+      { id: "p-report", group: "Seiten", label: "Wochenbericht", icon: FileText, run: () => go("/report") },
       { id: "p-set", group: "Seiten", label: "Einstellungen", icon: Settings, run: () => go("/einstellungen") },
     ];
     const actions: Cmd[] = [
