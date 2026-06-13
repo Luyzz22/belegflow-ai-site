@@ -13,6 +13,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   freigaben: "Freigaben",
   lieferanten: "Lieferanten",
   export: "DATEV-Export",
+  zahlungen: "Zahlungen",
   audit: "Audit-Trail",
   analytics: "Analytics",
   roi: "ROI",
