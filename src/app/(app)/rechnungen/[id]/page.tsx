@@ -31,6 +31,7 @@ import {
   recordKontierung,
   type KontierungMemory,
 } from "@/lib/kontierungMemory";
+import { pushRecent } from "@/lib/recents";
 import StatusBadge from "@/components/StatusBadge";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
@@ -223,9 +224,14 @@ export default function InvoiceDetailPage() {
     void load();
   }, [load]);
 
-  // Präziser Seitentitel mit Rechnungsnummer.
+  // Präziser Seitentitel + "zuletzt bearbeitet"-Eintrag.
   useEffect(() => {
-    if (detail?.rechnungsnummer) document.title = `${detail.rechnungsnummer} — FlowCheck AI+`;
+    if (!detail) return;
+    if (detail.rechnungsnummer) document.title = `${detail.rechnungsnummer} — FlowCheck AI+`;
+    pushRecent({
+      id: detail.id,
+      label: `${detail.lieferant || "Rechnung"} · ${detail.rechnungsnummer || `#${detail.id}`}`,
+    });
   }, [detail]);
 
   const handleApprove = useCallback(async () => {

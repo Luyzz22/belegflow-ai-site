@@ -12,6 +12,7 @@ import {
   Building2,
   Landmark,
   ScrollText,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/lieferanten", label: "Lieferanten", icon: Building2 },
   { href: "/export", label: "DATEV-Export", icon: Landmark },
   { href: "/audit", label: "Audit-Trail", icon: ScrollText },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];
 

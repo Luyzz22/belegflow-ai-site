@@ -14,6 +14,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   lieferanten: "Lieferanten",
   export: "DATEV-Export",
   audit: "Audit-Trail",
+  analytics: "Analytics",
   einstellungen: "Einstellungen",
   profil: "Profil",
 };

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Download, FileSpreadsheet, CheckCircle2 } from "lucide-react";
-import { flowcheckApi, API_BASE, getToken, ApiError, type DatevBuchung } from "@/lib/api-client";
-import { eur } from "@/lib/format";
+import { Download, FileSpreadsheet, CheckCircle2, History } from "lucide-react";
+import { flowcheckApi, API_BASE, getToken, ApiError, type DatevBuchung, type AuditEntry } from "@/lib/api-client";
+import { eur, dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import { ErrorState, EmptyState, TableSkeleton, Spinner } from "@/components/States";
 
@@ -25,12 +25,23 @@ function pick(row: DatevBuchung, keys: string[]): string | number | undefined {
   return undefined;
 }
 
+function extractCount(details: string): string {
+  const m = details?.match(/(\d+)\s*Buchung/i);
+  return m ? `${m[1]} Buchungen` : "—";
+}
+
+function extractHash(details: string): string {
+  const m = details?.match(/\b[a-f0-9]{8,64}\b/i);
+  return m ? `${m[0].slice(0, 8)}…` : "—";
+}
+
 export default function ExportPage() {
   const [buchungen, setBuchungen] = useState<DatevBuchung[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [history, setHistory] = useState<AuditEntry[]>([]);
 
   const load = useCallback(() => {
     flowcheckApi
@@ -42,6 +53,14 @@ export default function ExportPage() {
       .catch((e) => setError(e instanceof ApiError ? e.message : "Vorschau konnte nicht geladen werden."))
       .finally(() => setLoading(false));
   }, []);
+
+  // Export-Historie aus dem Audit-Trail.
+  useEffect(() => {
+    flowcheckApi
+      .audit("aktion=datev_export&limit=20")
+      .then((d) => setHistory(d.items || []))
+      .catch(() => setHistory([]));
+  }, [msg]);
 
   const retry = useCallback(() => {
     setLoading(true);
@@ -171,6 +190,52 @@ export default function ExportPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Bisherige Exporte */}
+      {history.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold text-[#1a1a2e]">
+            <History className="h-5 w-5 text-[#003856]" />
+            Bisherige Exporte
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                    <th className="px-6 py-3.5">Datum</th>
+                    <th className="px-6 py-3.5">Buchungen</th>
+                    <th className="px-6 py-3.5">Benutzer</th>
+                    <th className="px-6 py-3.5">SHA-256</th>
+                    <th className="px-6 py-3.5 text-right">Download</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
+                  {history.map((h) => (
+                    <tr key={h.id} className="transition hover:bg-[#faf9f7]">
+                      <td className="whitespace-nowrap px-6 py-3.5 text-[#64748b]">{dateDE(h.zeitpunkt, true)}</td>
+                      <td className="px-6 py-3.5 text-[#1a1a2e]">{extractCount(h.details || "")}</td>
+                      <td className="px-6 py-3.5 text-[#1a1a2e]">{h.benutzer || "—"}</td>
+                      <td className="px-6 py-3.5 font-mono text-xs text-[#64748b]">{extractHash(h.details || "")}</td>
+                      <td className="px-6 py-3.5 text-right">
+                        <a
+                          href={flowcheckApi.auditCsvUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#003856] transition hover:bg-[#003856]/5 active:scale-95"
+                          aria-label="Herunterladen"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

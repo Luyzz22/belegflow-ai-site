@@ -12,11 +12,14 @@ import {
   Building2,
   Landmark,
   ScrollText,
+  BarChart3,
   Settings,
+  Clock,
   CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi, type InvoiceListItem, type Lieferant } from "@/lib/api-client";
+import { getRecents, type RecentInvoice } from "@/lib/recents";
 
 interface Cmd {
   id: string;
@@ -54,6 +57,7 @@ export default function CommandMenu() {
   const [active, setActive] = useState(0);
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [lieferanten, setLieferanten] = useState<Lieferant[]>([]);
+  const [recents, setRecents] = useState<RecentInvoice[]>([]);
   const loadedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -85,9 +89,11 @@ export default function CommandMenu() {
       .catch(() => setLieferanten([]));
   }, [open]);
 
-  // Fokus beim Öffnen.
+  // Fokus + Recents beim Öffnen.
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (!open) return;
+    inputRef.current?.focus();
+    Promise.resolve().then(() => setRecents(getRecents()));
   }, [open]);
 
   // Globale Shortcuts.
@@ -123,6 +129,7 @@ export default function CommandMenu() {
       { id: "p-lief", group: "Seiten", label: "Lieferanten", icon: Building2, run: () => go("/lieferanten") },
       { id: "p-exp", group: "Seiten", label: "DATEV-Export", icon: Landmark, run: () => go("/export") },
       { id: "p-audit", group: "Seiten", label: "Audit-Trail", icon: ScrollText, run: () => go("/audit") },
+      { id: "p-analytics", group: "Seiten", label: "Analytics öffnen", icon: BarChart3, run: () => go("/analytics") },
       { id: "p-set", group: "Seiten", label: "Einstellungen", icon: Settings, run: () => go("/einstellungen") },
     ];
     const actions: Cmd[] = [
@@ -130,6 +137,13 @@ export default function CommandMenu() {
       { id: "a-review", group: "Aktionen", label: "Review starten", icon: Zap, run: () => go("/review") },
       { id: "a-export", group: "Aktionen", label: "DATEV exportieren", icon: Landmark, run: () => go("/export") },
     ];
+    const recent: Cmd[] = recents.map((r) => ({
+      id: `r-${r.id}`,
+      group: "Zuletzt bearbeitet",
+      label: r.label,
+      icon: Clock,
+      run: () => go(`/rechnungen/${r.id}`),
+    }));
     const inv: Cmd[] = invoices.map((i) => ({
       id: `i-${i.id}`,
       group: "Rechnungen",
@@ -145,20 +159,32 @@ export default function CommandMenu() {
       icon: Building2,
       run: () => go("/lieferanten"),
     }));
-    return [...pages, ...actions, ...inv, ...lief];
-  }, [invoices, lieferanten, go]);
+    return [...recent, ...pages, ...actions, ...inv, ...lief];
+  }, [invoices, lieferanten, recents, go]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return commands.filter((c) => c.group === "Seiten" || c.group === "Aktionen");
-    return commands
+    if (!q) {
+      return commands.filter(
+        (c) => c.group === "Zuletzt bearbeitet" || c.group === "Seiten" || c.group === "Aktionen"
+      );
+    }
+    const matches = commands
       .filter((c) => `${c.label} ${c.sub ?? ""}`.toLowerCase().includes(q))
       .slice(0, 30);
-  }, [commands, query]);
+    const search: Cmd = {
+      id: "search",
+      group: "Suche",
+      label: `Rechnungen durchsuchen: „${query.trim()}“`,
+      icon: Search,
+      run: () => go(`/rechnungen?q=${encodeURIComponent(query.trim())}`),
+    };
+    return [search, ...matches];
+  }, [commands, query, go]);
 
   // Gruppiert in Render-Reihenfolge.
   const groups = useMemo(() => {
-    const order = ["Aktionen", "Seiten", "Rechnungen", "Lieferanten"];
+    const order = ["Suche", "Zuletzt bearbeitet", "Aktionen", "Seiten", "Rechnungen", "Lieferanten"];
     const map = new Map<string, Cmd[]>();
     filtered.forEach((c) => {
       const arr = map.get(c.group) ?? [];

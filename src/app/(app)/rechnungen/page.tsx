@@ -45,7 +45,7 @@ function RechnungenInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [status, setStatus] = useState(() => searchParams.get("status") ?? "");
   const [period, setPeriod] = useState("");
   const [cutoff, setCutoff] = useState<number | null>(null);
