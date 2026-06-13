@@ -153,6 +153,10 @@ export interface InvoiceDetail {
   anomalien: Array<{ typ?: string; beschreibung?: string; schwere?: string } | string>;
   zahlungsbedingungen?: string;
   faelligkeit?: string;
+  approved_at?: string;
+  rejected_at?: string;
+  exported_at?: string;
+  paid_at?: string;
   created_at: string;
 }
 

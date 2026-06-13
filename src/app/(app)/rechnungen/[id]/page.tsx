@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -24,6 +24,10 @@ import {
   ThumbsUp,
   ThumbsDown,
   Cpu,
+  Upload,
+  Landmark,
+  CreditCard,
+  Workflow,
 } from "lucide-react";
 import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
@@ -42,8 +46,9 @@ import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toast from "@/components/Toast";
 import { LoadingState, ErrorState } from "@/components/States";
 import { recordFeedback, getFeedbackFor, getAccuracy } from "@/lib/kiFeedback";
+import { isPaid } from "@/lib/payments";
 
-type Tab = "validierung" | "kontierung" | "anomalien" | "ki";
+type Tab = "validierung" | "kontierung" | "anomalien" | "ki" | "fluss";
 type Flash = { type: "success" | "error"; text: string } | null;
 
 const CARD =
@@ -56,6 +61,7 @@ const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
   { value: "kontierung", label: "Kontierung", icon: <Calculator className="h-4 w-4" /> },
   { value: "anomalien", label: "Anomalien", icon: <AlertTriangle className="h-4 w-4" /> },
   { value: "ki", label: "KI-Analyse", icon: <Sparkles className="h-4 w-4" /> },
+  { value: "fluss", label: "Dokumentenfluss", icon: <Workflow className="h-4 w-4" /> },
 ];
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -896,6 +902,78 @@ export default function InvoiceDetailPage() {
                 )}
               </div>
             </div>
+          )}
+
+          {activeTab === "fluss" && (
+            (() => {
+              const st = (view.status || "").toLowerCase();
+              const paid = isPaid(view.id);
+              type SStatus = "done" | "current" | "pending" | "error";
+              const steps: { icon: typeof Upload; label: string; date?: string; status: SStatus }[] = [
+                { icon: Upload, label: "Upload", date: view.created_at, status: "done" },
+                { icon: Sparkles, label: "KI-Extraktion", date: view.created_at, status: st === "neu" ? "current" : "done" },
+                { icon: ShieldCheck, label: "Validierung", date: view.created_at, status: st === "neu" ? "pending" : "done" },
+                {
+                  icon: Check,
+                  label: "Freigabe",
+                  date: view.approved_at || view.rejected_at,
+                  status: st === "abgelehnt" ? "error" : st === "freigegeben" || st === "exportiert" ? "done" : st === "verarbeitet" ? "current" : "pending",
+                },
+                {
+                  icon: Landmark,
+                  label: "DATEV-Export",
+                  date: view.exported_at,
+                  status: st === "exportiert" ? "done" : st === "freigegeben" ? "current" : "pending",
+                },
+                { icon: CreditCard, label: "Zahlung", date: view.paid_at, status: paid ? "done" : "pending" },
+              ];
+              const circleCls: Record<SStatus, string> = {
+                done: "ring-2 ring-emerald-500 bg-emerald-50 text-emerald-600",
+                current: "ring-2 ring-blue-500 bg-blue-50 text-blue-600",
+                pending: "ring-2 ring-stone-300 bg-stone-50 text-stone-400",
+                error: "ring-2 ring-red-500 bg-red-50 text-red-600",
+              };
+              const statusText: Record<SStatus, string> = {
+                done: "Abgeschlossen",
+                current: "In Bearbeitung",
+                pending: "Ausstehend",
+                error: "Abgelehnt",
+              };
+              const statusColor: Record<SStatus, string> = {
+                done: "text-emerald-600",
+                current: "text-blue-600",
+                pending: "text-[#94a3b8]",
+                error: "text-red-600",
+              };
+              return (
+                <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                  {steps.map((s, i) => {
+                    const Icon = s.icon;
+                    return (
+                      <Fragment key={s.label}>
+                        {i > 0 && (
+                          <div
+                            className={`hidden h-0.5 flex-1 md:block ${
+                              steps[i - 1].status === "done" ? "bg-emerald-500" : "bg-stone-300"
+                            }`}
+                          />
+                        )}
+                        <div className="flex items-center gap-3 md:flex-col md:gap-2 md:text-center">
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${circleCls[s.status]}`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-[#1a1a2e]">{s.label}</p>
+                            <p className="text-xs text-[#64748b]">{s.date ? dateDE(s.date) : "—"}</p>
+                            <p className={`text-xs font-medium ${statusColor[s.status]}`}>{statusText[s.status]}</p>
+                          </div>
+                        </div>
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </div>
       </div>
