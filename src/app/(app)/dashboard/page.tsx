@@ -32,6 +32,10 @@ import {
   Sparkles,
   CheckCircle2,
   X,
+  Coins,
+  AlertTriangle,
+  Lightbulb,
+  type LucideIcon,
 } from "lucide-react";
 import {
   flowcheckApi,
@@ -41,6 +45,8 @@ import {
   type InvoiceStatus,
   type Lieferant,
 } from "@/lib/api-client";
+import { buildRecommendations, dismissRec } from "@/lib/recommendations";
+import { getPaidSet } from "@/lib/payments";
 import { eur, num, dateDE } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
@@ -173,6 +179,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [nowTs, setNowTs] = useState(0);
 
   const load = useCallback(() => {
     Promise.all([
@@ -192,6 +199,7 @@ export default function DashboardPage() {
     ])
       .then(([k, inv, lief, audit]) => {
         const now = Date.now();
+        setNowTs(now);
         setKpis(k);
         setInvoices(inv);
         setTopLieferanten(
@@ -269,6 +277,26 @@ export default function DashboardPage() {
 
   const recent = useMemo(() => (invoices ?? []).slice(0, 5), [invoices]);
   const maxVolumen = Math.max(1, ...(topLieferanten ?? []).map((l) => l.gesamtvolumen));
+
+  const recommendations = useMemo(() => {
+    if (!nowTs) return [];
+    return buildRecommendations({ invoices: invoices ?? [], kpis, paidSet: getPaidSet(), now: nowTs })
+      .filter((r) => !dismissed.has(r.id))
+      .slice(0, 3);
+  }, [invoices, kpis, nowTs, dismissed]);
+
+  const REC_ICON: Record<string, LucideIcon> = {
+    money: Coins,
+    warning: AlertTriangle,
+    insight: Building2,
+    shield: ShieldAlert,
+    bolt: Zap,
+  };
+  const REC_BORDER: Record<string, string> = {
+    money: "border-l-[#c8985a]",
+    warning: "border-l-amber-400",
+    info: "border-l-blue-400",
+  };
 
   const firstName = (user?.name || "").split(" ")[0];
   const header = (
@@ -415,6 +443,50 @@ export default function DashboardPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Intelligente Empfehlungen */}
+      {recommendations.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+            <Lightbulb className="h-4 w-4 text-[#c8985a]" />
+            Intelligente Empfehlungen
+          </h2>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+            {recommendations.map((r) => {
+              const Icon = REC_ICON[r.icon] ?? Lightbulb;
+              return (
+                <div
+                  key={r.id}
+                  className={`relative rounded-2xl border border-l-4 border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)] ${REC_BORDER[r.tone]}`}
+                >
+                  <button
+                    onClick={() => {
+                      dismissRec(r.id);
+                      setDismissed((prev) => new Set(prev).add(r.id));
+                    }}
+                    aria-label="Ausblenden"
+                    className="absolute right-2 top-2 rounded-lg p-1 text-[#94a3b8] transition hover:bg-[#faf9f7] hover:text-[#64748b]"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-[#003856]" />
+                    <p className="text-sm font-semibold text-[#1a1a2e]">{r.title}</p>
+                  </div>
+                  <p className="mt-1.5 text-sm text-[#64748b]">{r.text}</p>
+                  <Link
+                    href={r.cta.href}
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#003856] transition hover:gap-1.5"
+                  >
+                    {r.cta.label}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
