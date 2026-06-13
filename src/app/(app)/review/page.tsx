@@ -138,6 +138,11 @@ export default function ReviewPage() {
   const done = !loadingList && items.length > 0 && idx >= items.length;
   const avg = times.length ? times.reduce((s, v) => s + v, 0) / times.length : 0;
 
+  // ⌀ Bearbeitungszeit für die Analytics-KPI persistieren.
+  useEffect(() => {
+    if (done && avg > 0) localStorage.setItem("flowcheck_review_avg", avg.toFixed(1));
+  }, [done, avg]);
+
   const advance = useCallback(() => {
     setLeaving(true);
     setShowBreakdown(false);
