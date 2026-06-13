@@ -20,6 +20,10 @@ import {
   Save,
   PiggyBank,
   History,
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  Cpu,
 } from "lucide-react";
 import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
@@ -37,8 +41,9 @@ import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toast from "@/components/Toast";
 import { LoadingState, ErrorState } from "@/components/States";
+import { recordFeedback, getFeedbackFor, getAccuracy } from "@/lib/kiFeedback";
 
-type Tab = "validierung" | "kontierung" | "anomalien";
+type Tab = "validierung" | "kontierung" | "anomalien" | "ki";
 type Flash = { type: "success" | "error"; text: string } | null;
 
 const CARD =
@@ -50,6 +55,7 @@ const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
   { value: "validierung", label: "Validierung", icon: <ShieldCheck className="h-4 w-4" /> },
   { value: "kontierung", label: "Kontierung", icon: <Calculator className="h-4 w-4" /> },
   { value: "anomalien", label: "Anomalien", icon: <AlertTriangle className="h-4 w-4" /> },
+  { value: "ki", label: "KI-Analyse", icon: <Sparkles className="h-4 w-4" /> },
 ];
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -136,6 +142,8 @@ export default function InvoiceDetailPage() {
   const [dupIgnored, setDupIgnored] = useState(false);
   const [skonto, setSkonto] = useState<SkontoInfo | null>(null);
   const [kontMemory, setKontMemory] = useState<KontierungMemory | null>(null);
+  const [feedback, setFeedback] = useState<boolean | null>(null);
+  const [accuracy, setAccuracy] = useState<{ pct: number; count: number }>({ pct: 0, count: 0 });
 
   // Lieferanten-Historie für den Konfidenz-Score (Name → Anzahl Rechnungen).
   useEffect(() => {
@@ -169,6 +177,8 @@ export default function InvoiceDetailPage() {
         if (cancelled) return;
         setSkonto(sk);
         setKontMemory(mem);
+        setFeedback(getFeedbackFor(detail.id));
+        setAccuracy(getAccuracy());
       });
     return () => {
       cancelled = true;
@@ -380,6 +390,18 @@ export default function InvoiceDetailPage() {
   };
 
   const setFormField = (k: string) => (v: string) => setForm((prev) => ({ ...prev, [k]: v }));
+
+  const giveFeedback = (ok: boolean) => {
+    recordFeedback(view.id, ok);
+    setFeedback(ok);
+    setAccuracy(getAccuracy());
+    if (ok) {
+      setFlash({ type: "success", text: "Danke! Extraktion als korrekt bestätigt." });
+    } else {
+      startEdit();
+      setFlash({ type: "success", text: "Bitte korrigieren Sie die Felder rechts." });
+    }
+  };
 
   const onConfidenceAction = (action: "fields" | "kontierung") => {
     if (action === "kontierung") {
@@ -784,6 +806,95 @@ export default function InvoiceDetailPage() {
                   })}
                 </ul>
               )}
+            </div>
+          )}
+
+          {activeTab === "ki" && (
+            <div className="space-y-6">
+              {/* Extraktions-Herkunft */}
+              <div>
+                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                  Extraktion &amp; Validierung
+                </p>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "Lieferant", value: view.lieferant, ok: undefined as boolean | undefined, note: "Aus Kopfbereich des Dokuments extrahiert." },
+                    { label: "IBAN", value: view.iban, ok: !!view.validierung?.iban_valid, note: view.validierung?.iban_valid ? "IBAN Mod-97 Prüfziffer korrekt." : "IBAN nicht verifizierbar." },
+                    { label: "USt-ID", value: view.ust_id, ok: !!view.validierung?.ustid_valid, note: view.validierung?.ustid_valid ? "USt-IdNr.-Format korrekt." : "USt-IdNr. nicht verifizierbar." },
+                    { label: "Betrag", value: eur(view.betrag, view.waehrung), ok: summeOk, note: summeOk ? `Netto (${eur(view.netto, view.waehrung)}) + USt (${eur(view.ust_betrag, view.waehrung)}) = Brutto ✓` : "Summenprüfung fehlgeschlagen." },
+                  ].map((f) => (
+                    <li key={f.label} className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium uppercase tracking-wider text-[#64748b]">{f.label}</span>
+                        {f.ok !== undefined &&
+                          (f.ok ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          ))}
+                      </div>
+                      <p className="mt-1 font-medium text-[#1a1a2e]">{f.value || "—"}</p>
+                      <p className="mt-1 font-mono text-xs text-[#64748b]">{f.note}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Modell-Info */}
+              <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-white p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-[#003856]" />
+                  <p className="text-sm font-semibold text-[#1a1a2e]">Verarbeitung</p>
+                </div>
+                <dl className="space-y-1.5 font-mono text-xs text-[#64748b]">
+                  <div className="flex justify-between gap-4">
+                    <dt>Methode</dt>
+                    <dd className="text-right text-[#1a1a2e]">KI-Extraktion (PDF/Scan) · Parser (XRechnung/ZUGFeRD)</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt>Pipeline</dt>
+                    <dd className="text-right text-[#1a1a2e]">Dokument → Text → KI → JSON → Validierung</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt>Telemetrie (Tokens, Kosten, Dauer)</dt>
+                    <dd className="text-right text-[#94a3b8]">vom Backend nicht übermittelt</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {/* Feedback-Loop */}
+              <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-white p-4">
+                <p className="text-sm font-semibold text-[#1a1a2e]">War diese Extraktion korrekt?</p>
+                {feedback === null ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => giveFeedback(true)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-emerald-700 active:scale-95"
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                      Ja, alles richtig
+                    </button>
+                    <button
+                      onClick={() => giveFeedback(false)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 active:scale-95"
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                      Nein, Fehler korrigieren
+                    </button>
+                  </div>
+                ) : (
+                  <p className={`mt-2 inline-flex items-center gap-1.5 text-sm font-medium ${feedback ? "text-emerald-700" : "text-amber-700"}`}>
+                    {feedback ? <ThumbsUp className="h-4 w-4" /> : <ThumbsDown className="h-4 w-4" />}
+                    {feedback ? "Als korrekt bestätigt." : "Zur Korrektur markiert."}
+                  </p>
+                )}
+                {accuracy.count > 0 && (
+                  <p className="mt-3 border-t border-[rgba(0,56,86,0.06)] pt-3 text-xs text-[#64748b]">
+                    KI-Genauigkeit: <span className="font-semibold text-[#003856]">{accuracy.pct}%</span> (basierend auf{" "}
+                    {accuracy.count} bewerteten Rechnungen)
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
