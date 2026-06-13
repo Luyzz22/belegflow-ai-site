@@ -4,7 +4,17 @@ import { useState } from "react";
 import { ShieldCheck, Calculator, Bell, Palette, Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Toggle from "@/components/Toggle";
+import StammdatenPanel from "@/components/StammdatenPanel";
 import { useToast } from "@/components/toast/ToastProvider";
+
+type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten";
+
+const TABS: { value: SettingsTab; label: string }[] = [
+  { value: "allgemein", label: "Allgemein" },
+  { value: "konten", label: "Kontenplan" },
+  { value: "kostenstellen", label: "Kostenstellen" },
+  { value: "lieferanten", label: "Lieferanten-Stammdaten" },
+];
 import {
   loadSettings,
   saveSettings,
@@ -62,6 +72,7 @@ function ToggleRow({
 export default function EinstellungenPage() {
   const { addToast } = useToast();
   const [s, setS] = useState<AppSettings>(() => loadSettings());
+  const [tab, setTab] = useState<SettingsTab>("allgemein");
 
   const persist = (section: string) => {
     saveSettings(s);
@@ -79,8 +90,30 @@ export default function EinstellungenPage() {
 
   return (
     <div className="fc-fade-in">
-      <PageHeader title="Einstellungen" description="Freigabe-Regeln, Kontierung, Benachrichtigungen und Darstellung" />
+      <PageHeader title="Einstellungen" description="Konfiguration, Stammdaten und Darstellung" />
 
+      {/* Tab-Leiste */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setTab(t.value)}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition active:scale-95 ${
+              tab === t.value
+                ? "bg-[#003856] text-white"
+                : "bg-white text-[#64748b] ring-1 ring-[rgba(0,56,86,0.12)] hover:bg-[#faf9f7] hover:text-[#003856]"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "konten" && <StammdatenPanel which="konten" />}
+      {tab === "kostenstellen" && <StammdatenPanel which="kostenstellen" />}
+      {tab === "lieferanten" && <StammdatenPanel which="lieferanten" />}
+
+      {tab === "allgemein" && (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Freigabe-Regeln */}
         <section className={CARD}>
@@ -250,6 +283,7 @@ export default function EinstellungenPage() {
           <SaveButton onClick={() => persist("Darstellung")} />
         </section>
       </div>
+      )}
     </div>
   );
 }
