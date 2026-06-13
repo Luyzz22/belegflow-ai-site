@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   Printer,
@@ -33,6 +34,7 @@ function eventMeta(aktion: string): { icon: LucideIcon; cls: string; ring: strin
 export default function ComplianceCenterPage() {
   const [result, setResult] = useState<ConfidenceResult | null>(null);
   const [events, setEvents] = useState<AuditEntry[]>([]);
+  const [nowTs, setNowTs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +136,7 @@ export default function ComplianceCenterPage() {
         const tier = score >= 90 ? "high" : score >= 70 ? "medium" : "low";
         setResult({ score, tier, checks });
         setEvents(audit.items.slice(0, 5));
+        setNowTs(Date.now());
         setError(null);
       })
       .catch(() => setError("Compliance-Status konnte nicht ermittelt werden."))
@@ -213,6 +216,61 @@ export default function ComplianceCenterPage() {
             })}
           </ul>
         )}
+      </div>
+
+      {/* Regulatorischer Radar */}
+      <div className={`${CARD} mt-6`}>
+        <h2 className="mb-4 text-xl font-semibold text-[#1a1a2e]">Regulatorische Änderungen</h2>
+        <ul className="space-y-3">
+          {[
+            {
+              date: "2027-01-01",
+              tone: "red" as const,
+              title: "E-Rechnungs-Versandpflicht (B2B)",
+              text: "Ab dem 01.01.2027 müssen Unternehmen in Deutschland B2B-Rechnungen als E-Rechnung versenden. FlowCheck unterstützt XRechnung 3.0 ✅",
+              cta: { label: "Mehr erfahren", href: "/compliance" },
+            },
+            {
+              date: "2026-08-02",
+              tone: "amber" as const,
+              title: "EU AI Act Art. 50 — Transparenzpflichten",
+              text: "KI-Systeme müssen als solche gekennzeichnet werden. Der KI-Analyse-Tab schafft Transparenz ✅",
+              cta: { label: "Compliance prüfen", href: "/rechnungen" },
+            },
+            {
+              date: "2025-01-01",
+              tone: "green" as const,
+              title: "E-Rechnungs-Empfangspflicht ✅",
+              text: "Seit 01.01.2025 müssen alle Unternehmen E-Rechnungen empfangen können. FlowCheck: XRechnung-Parser aktiv.",
+              cta: null,
+            },
+          ].map((r) => {
+            const ts = Date.parse(r.date);
+            const future = nowTs > 0 && ts > nowTs;
+            const days = nowTs > 0 ? Math.ceil((ts - nowTs) / 86_400_000) : 0;
+            const dot = r.tone === "red" ? "bg-red-500" : r.tone === "amber" ? "bg-amber-500" : "bg-emerald-500";
+            const border = r.tone === "red" ? "border-l-red-400" : r.tone === "amber" ? "border-l-amber-400" : "border-l-emerald-400";
+            return (
+              <li key={r.date} className={`rounded-xl border border-l-4 border-[rgba(0,56,86,0.08)] bg-white p-4 ${border}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+                  <span className="text-sm font-semibold text-[#1a1a2e]">{dateDE(r.date)} — {r.title}</span>
+                  {future && (
+                    <span className="rounded-md bg-[#003856]/5 px-2 py-0.5 text-xs font-semibold text-[#003856]">
+                      in {days} Tagen
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm text-[#64748b]">{r.text}</p>
+                {r.cta && (
+                  <Link href={r.cta.href} className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#003856] hover:underline">
+                    {r.cta.label} →
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

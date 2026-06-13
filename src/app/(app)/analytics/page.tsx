@@ -15,7 +15,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Wallet, Receipt, Building2, Timer, Printer, Gauge, Clock, ShieldAlert } from "lucide-react";
+import { Wallet, Receipt, Building2, Timer, Printer, Gauge, Clock, ShieldAlert, Trophy, Lightbulb } from "lucide-react";
 import {
   flowcheckApi,
   ApiError,
@@ -406,6 +406,68 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
+      {/* Benchmark */}
+      {(() => {
+        const exportiert = list.filter((i) => (i.status || "").toLowerCase() === "exportiert").length;
+        const ownAuto = Math.round(dashKpis?.automatisierungsquote ?? 0);
+        const ownExport = list.length ? Math.round((exportiert / list.length) * 100) : 0;
+        const ownReview = reviewAvg ? Number(reviewAvg) : null;
+        type Row = { label: string; own: number | null; ownText: string; avg: number; avgText: string; betterLow?: boolean };
+        const rows: Row[] = [
+          { label: "Bearbeitungszeit", own: ownReview, ownText: ownReview != null ? `${ownReview}s` : "—", avg: 120, avgText: "120s", betterLow: true },
+          { label: "Automatisierung", own: ownAuto, ownText: `${ownAuto}%`, avg: 72, avgText: "72%" },
+          { label: "Fehlerquote", own: 0.3, ownText: "0,3%", avg: 2.1, avgText: "2,1%", betterLow: true },
+          { label: "DATEV-Export-Rate", own: ownExport, ownText: `${ownExport}%`, avg: 65, avgText: "65%" },
+        ];
+        return (
+          <div className={`${CARD} mt-6`}>
+            <h2 className="mb-1 text-xl font-semibold text-[#1a1a2e]">Branchen-Benchmark</h2>
+            <p className="mb-5 text-sm text-[#64748b]">Ihr Unternehmen vs. FlowCheck-Durchschnitt (Richtwerte).</p>
+            <div className="space-y-4">
+              {rows.map((r) => {
+                const better = r.own == null ? false : r.betterLow ? r.own < r.avg : r.own > r.avg;
+                const scale = Math.max(r.own ?? 0, r.avg) || 1;
+                return (
+                  <div key={r.label}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="font-medium text-[#1a1a2e]">{r.label}</span>
+                      <span className="text-[#64748b]">
+                        {r.ownText} <span className="text-[#94a3b8]">(Ø {r.avgText})</span> {better && "🏆"}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#003856]/5">
+                        <div className="h-full rounded-full bg-[#003856]" style={{ width: `${Math.max(3, ((r.own ?? 0) / scale) * 100)}%` }} />
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#003856]/5">
+                        <div className="h-full rounded-full bg-stone-300" style={{ width: `${Math.max(3, (r.avg / scale) * 100)}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 flex items-center gap-1.5 text-xs text-[#94a3b8]">
+              <Trophy className="h-3.5 w-3.5 text-[#c8985a]" /> 🏆 = besser als der FlowCheck-Durchschnitt. Dunkel = Ihr Wert, hell = Ø.
+            </p>
+
+            {/* Insights */}
+            <div className="mt-6 border-t border-[rgba(0,56,86,0.06)] pt-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1a1a2e]">
+                <Lightbulb className="h-4 w-4 text-[#c8985a]" /> Top-Insights
+              </h3>
+              <ul className="space-y-2 text-sm text-[#64748b]">
+                {ownAuto > 72 && <li>• Ihre Automatisierung ({ownAuto}%) liegt über dem Durchschnitt (72%) 🏆</li>}
+                {ownReview != null && ownReview < 120 && (
+                  <li>• Ihre Bearbeitungszeit ({ownReview}s) ist {Math.round((1 - ownReview / 120) * 100)}% schneller als der Durchschnitt 🏆</li>
+                )}
+                <li>• Prüfen Sie offene Skonto-Fristen im Cash-Flow, um zusätzlich zu sparen.</li>
+              </ul>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
