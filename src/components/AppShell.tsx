@@ -13,6 +13,8 @@ import {
   Landmark,
   ScrollText,
   BarChart3,
+  Coins,
+  ShieldCheck,
   Settings,
   LogOut,
   Menu,
@@ -35,6 +37,8 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/export", label: "DATEV-Export", icon: Landmark },
   { href: "/audit", label: "Audit-Trail", icon: ScrollText },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/roi", label: "ROI", icon: Coins },
+  { href: "/compliance-center", label: "Compliance", icon: ShieldCheck },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];
 
@@ -194,10 +198,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f8f6f3]">
       {/* Route-Progress-Bar oben */}
-      <div key={pathname} className="fc-route-progress fixed left-0 top-0 z-[200] h-0.5 bg-[#003856]" />
+      <div key={pathname} className="fc-route-progress fixed left-0 top-0 z-[200] h-0.5 bg-[#003856] print:hidden" />
       {/* Desktop sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 md:block ${
+        className={`fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 md:block print:hidden ${
           collapsed ? "w-[76px]" : "w-64"
         }`}
       >
@@ -229,9 +233,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main column */}
-      <div className={`transition-[padding] duration-200 ${collapsed ? "md:pl-[76px]" : "md:pl-64"}`}>
+      <div className={`transition-[padding] duration-200 print:!pl-0 ${collapsed ? "md:pl-[76px]" : "md:pl-64"}`}>
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[rgba(0,56,86,0.08)] bg-[#f8f6f3]/85 px-4 backdrop-blur-xl md:hidden">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[rgba(0,56,86,0.08)] bg-[#f8f6f3]/85 px-4 backdrop-blur-xl md:hidden print:hidden">
           <button
             onClick={() => setMobileOpen(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-[#003856] hover:bg-[#003856]/5"

@@ -15,6 +15,9 @@ export const ROUTE_LABELS: Record<string, string> = {
   export: "DATEV-Export",
   audit: "Audit-Trail",
   analytics: "Analytics",
+  roi: "ROI",
+  "compliance-center": "Compliance",
+  report: "Wochenbericht",
   einstellungen: "Einstellungen",
   profil: "Profil",
 };
@@ -38,7 +41,7 @@ export default function Breadcrumbs({ lastLabel }: { lastLabel?: string }) {
   });
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-1 text-sm text-[#64748b]">
+    <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-1 text-sm text-[#64748b] print:hidden">
       <Link href="/dashboard" className="transition hover:text-[#003856]">
         Dashboard
       </Link>

@@ -213,7 +213,7 @@ export default function CommandMenu() {
       <button
         onClick={() => setShowShortcuts((s) => !s)}
         aria-label="Tastenkürzel anzeigen"
-        className="fixed bottom-5 right-5 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(0,56,86,0.12)] bg-white text-sm font-semibold text-[#003856] shadow-md transition hover:bg-[#faf9f7]"
+        className="fixed bottom-5 right-5 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(0,56,86,0.12)] bg-white text-sm font-semibold text-[#003856] shadow-md transition hover:bg-[#faf9f7] print:hidden"
       >
         ?
       </button>
