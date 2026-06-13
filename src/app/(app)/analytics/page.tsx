@@ -15,8 +15,14 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Wallet, Receipt, Building2, Timer, Printer } from "lucide-react";
-import { flowcheckApi, ApiError, type InvoiceListItem, type InvoiceDetail } from "@/lib/api-client";
+import { Wallet, Receipt, Building2, Timer, Printer, Gauge, Clock, ShieldAlert } from "lucide-react";
+import {
+  flowcheckApi,
+  ApiError,
+  type InvoiceListItem,
+  type InvoiceDetail,
+  type DashboardKpis,
+} from "@/lib/api-client";
 import { eur, num } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import { ErrorState, EmptyState, CardSkeleton, Skeleton } from "@/components/States";
@@ -47,6 +53,8 @@ export default function AnalyticsPage() {
   const [list, setList] = useState<InvoiceListItem[]>([]);
   const [details, setDetails] = useState<InvoiceDetail[]>([]);
   const [currentYear, setCurrentYear] = useState(0);
+  const [dashKpis, setDashKpis] = useState<DashboardKpis | null>(null);
+  const [reviewAvg, setReviewAvg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +86,14 @@ export default function AnalyticsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Prozess-KPIs aus Dashboard + Review-Statistik.
+  useEffect(() => {
+    flowcheckApi.kpis().then(setDashKpis).catch(() => setDashKpis(null));
+    Promise.resolve().then(() => {
+      if (typeof window !== "undefined") setReviewAvg(localStorage.getItem("flowcheck_review_avg"));
+    });
+  }, []);
 
   // ── KPIs ────────────────────────────────────────────────
   const kpis = useMemo(() => {
@@ -353,6 +369,41 @@ export default function AnalyticsPage() {
               </ul>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Prozess-KPIs */}
+      <div className={`${CARD} mt-6`}>
+        <h2 className="mb-1 text-xl font-semibold text-[#1a1a2e]">Prozess-KPIs</h2>
+        <p className="mb-5 text-sm text-[#64748b]">Effizienz- und Engpass-Kennzahlen aus dem laufenden Betrieb.</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              <Gauge className="h-4 w-4" /> Automatisierungsgrad
+            </span>
+            <p className="mt-2 text-2xl font-bold text-[#1a1a2e]">{Math.round(dashKpis?.automatisierungsquote ?? 0)}%</p>
+          </div>
+          <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              <Clock className="h-4 w-4" /> ⌀ Review-Zeit
+            </span>
+            <p className="mt-2 text-2xl font-bold text-[#1a1a2e]">{reviewAvg ? `${reviewAvg} Sek.` : "—"}</p>
+          </div>
+          <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              <Timer className="h-4 w-4" /> Offene Freigaben
+            </span>
+            <p className="mt-2 text-2xl font-bold text-[#1a1a2e]">{num(dashKpis?.offene_freigaben ?? 0)}</p>
+            {dashKpis?.aelteste_freigabe_stunden != null && (
+              <p className="mt-0.5 text-xs text-[#64748b]">Älteste: {Math.round(dashKpis.aelteste_freigabe_stunden)} h</p>
+            )}
+          </div>
+          <div className="rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[#64748b]">
+              <ShieldAlert className="h-4 w-4" /> Anomalie-Alerts
+            </span>
+            <p className="mt-2 text-2xl font-bold text-[#1a1a2e]">{num(dashKpis?.anomalie_alerts ?? 0)}</p>
+          </div>
         </div>
       </div>
     </div>
