@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ShieldCheck, Calculator, Bell, Palette, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ShieldCheck, Calculator, Bell, Palette, Save, Link2, Copy, RefreshCw, Power } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Toggle from "@/components/Toggle";
 import StammdatenPanel from "@/components/StammdatenPanel";
@@ -73,6 +73,38 @@ export default function EinstellungenPage() {
   const { addToast } = useToast();
   const [s, setS] = useState<AppSettings>(() => loadSettings());
   const [tab, setTab] = useState<SettingsTab>("allgemein");
+  const [portalToken, setPortalToken] = useState<string>("");
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      let t = localStorage.getItem("flowcheck_portal_token");
+      if (!t) {
+        t = Math.random().toString(36).slice(2, 12);
+        localStorage.setItem("flowcheck_portal_token", t);
+      }
+      setPortalToken(t);
+    });
+  }, []);
+
+  const portalLink = portalToken && typeof window !== "undefined" ? `${window.location.origin}/portal/${portalToken}` : "";
+
+  const regeneratePortal = () => {
+    const t = Math.random().toString(36).slice(2, 12);
+    localStorage.setItem("flowcheck_portal_token", t);
+    setPortalToken(t);
+    addToast({ type: "success", text: "Neuer Portal-Link generiert" });
+  };
+  const deactivatePortal = () => {
+    localStorage.removeItem("flowcheck_portal_token");
+    setPortalToken("");
+    addToast({ type: "info", text: "Portal deaktiviert" });
+  };
+  const copyPortal = () => {
+    navigator.clipboard?.writeText(portalLink).then(
+      () => addToast({ type: "success", text: "Portal-Link kopiert" }),
+      () => addToast({ type: "error", text: "Kopieren fehlgeschlagen" })
+    );
+  };
 
   const persist = (section: string) => {
     saveSettings(s);
@@ -281,6 +313,37 @@ export default function EinstellungenPage() {
             </div>
           </div>
           <SaveButton onClick={() => persist("Darstellung")} />
+        </section>
+
+        {/* Lieferanten-Portal */}
+        <section className={`${CARD} lg:col-span-2`}>
+          <SectionHeader icon={Link2} title="Lieferanten-Portal" />
+          <p className="mb-4 text-sm text-[#64748b]">
+            Teilen Sie diesen Link mit Ihren Lieferanten. Eingereichte Rechnungen werden automatisch verarbeitet.
+          </p>
+          {portalToken ? (
+            <>
+              <div className="flex items-center gap-2 rounded-xl border border-[rgba(0,56,86,0.12)] bg-[#faf9f7] px-3 py-2.5">
+                <Link2 className="h-4 w-4 shrink-0 text-[#64748b]" />
+                <code className="flex-1 truncate font-mono text-xs text-[#1a1a2e]">{portalLink}</code>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button onClick={copyPortal} className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95">
+                  <Copy className="h-4 w-4" /> Link kopieren
+                </button>
+                <button onClick={regeneratePortal} className="inline-flex items-center gap-2 rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2 text-sm font-medium text-[#003856] transition-all hover:bg-[#faf9f7] active:scale-95">
+                  <RefreshCw className="h-4 w-4" /> Neuen Link generieren
+                </button>
+                <button onClick={deactivatePortal} className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 active:scale-95">
+                  <Power className="h-4 w-4" /> Portal deaktivieren
+                </button>
+              </div>
+            </>
+          ) : (
+            <button onClick={regeneratePortal} className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95">
+              <Power className="h-4 w-4" /> Portal aktivieren
+            </button>
+          )}
         </section>
       </div>
       )}

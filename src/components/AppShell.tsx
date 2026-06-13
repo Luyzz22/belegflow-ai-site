@@ -29,6 +29,7 @@ import { flowcheckApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Brand";
 import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
+import EntitySwitcher from "@/components/EntitySwitcher";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -89,6 +90,13 @@ function SidebarPanel({
           </span>
         )}
       </div>
+
+      {/* Mandanten-Switcher */}
+      {!collapsed && (
+        <div className="mb-1 mt-1">
+          <EntitySwitcher />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="mt-2 flex flex-1 flex-col gap-1 overflow-y-auto px-3">
