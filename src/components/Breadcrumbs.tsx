@@ -16,6 +16,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   zahlungen: "Zahlungen",
   audit: "Audit-Trail",
   analytics: "Analytics",
+  prozesse: "Prozesse",
+  cashflow: "Cash Flow",
   roi: "ROI",
   "compliance-center": "Compliance",
   report: "Wochenbericht",
