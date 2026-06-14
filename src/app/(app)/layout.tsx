@@ -5,6 +5,7 @@ import AuthGuard from "@/components/AuthGuard";
 import AppShell from "@/components/AppShell";
 import CommandMenu from "@/components/CommandMenu";
 import CopilotWidget from "@/components/CopilotWidget";
+import ProductTour from "@/components/ProductTour";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/toast/ToastProvider";
 
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <AppShell>{children}</AppShell>
             <CommandMenu />
             <CopilotWidget />
+            <ProductTour />
           </AuthGuard>
         </AuthProvider>
       </ToastProvider>

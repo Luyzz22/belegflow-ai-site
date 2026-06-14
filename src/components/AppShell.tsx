@@ -109,6 +109,7 @@ function SidebarPanel({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              data-tour={`nav-${item.href}`}
               title={collapsed ? item.label : undefined}
               className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                 active ? "bg-white/10 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"

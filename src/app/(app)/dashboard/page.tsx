@@ -515,7 +515,7 @@ export default function DashboardPage() {
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div data-tour="kpis" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <KpiCard
           label="Rechnungen diesen Monat"
           value={<CountUp value={kpis?.rechnungen_monat ?? 0} />}
