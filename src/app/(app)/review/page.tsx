@@ -162,9 +162,11 @@ export default function ReviewPage() {
     if (!ready || !detail) return;
     const id = detail.id;
     const label = detail.rechnungsnummer || `#${id}`;
-    // Verzögerte Ausführung → echtes "Rückgängig" innerhalb von 5 s.
+    // Optimistic UI: sofort weiter, API verzögert im Hintergrund (5 s "Rückgängig").
     const commit = window.setTimeout(() => {
-      void flowcheckApi.approve(id).catch(() => {});
+      void flowcheckApi.approve(id).catch(() => {
+        addToast({ type: "error", text: `Freigabe für ${label} fehlgeschlagen` });
+      });
     }, 5000);
     addToast({
       type: "success",

@@ -47,6 +47,18 @@ import {
 } from "@/lib/api-client";
 import { buildRecommendations, dismissRec } from "@/lib/recommendations";
 import { getPaidSet } from "@/lib/payments";
+import { isDemo } from "@/lib/api-client";
+
+const KPI_CACHE = "flowcheck_kpis_cache";
+function readKpiCache(): DashboardKpis | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const r = localStorage.getItem(KPI_CACHE);
+    return r ? (JSON.parse(r) as DashboardKpis) : null;
+  } catch {
+    return null;
+  }
+}
 import { eur, num, dateDE } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
@@ -74,7 +86,7 @@ function relativeTime(iso: string, now: number): string {
   return diffTage === 1 ? "vor 1 Tag" : `vor ${diffTage} Tagen`;
 }
 
-const STATUS_META: Record<InvoiceStatus, { label: string; color: string }> = {
+const STATUS_META: Record<string, { label: string; color: string }> = {
   neu: { label: "Neu", color: "#3b82f6" },
   verarbeitet: { label: "Verarbeitet", color: "#f59e0b" },
   freigegeben: { label: "Freigegeben", color: "#059669" },
@@ -172,7 +184,7 @@ function KpiCard({
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [kpis, setKpis] = useState<DashboardKpis | null>(null);
+  const [kpis, setKpis] = useState<DashboardKpis | null>(() => readKpiCache());
   const [invoices, setInvoices] = useState<InvoiceListItem[] | null>(null);
   const [topLieferanten, setTopLieferanten] = useState<Lieferant[] | null>(null);
   const [activity, setActivity] = useState<ActivityItem[] | null>(null);
@@ -201,6 +213,13 @@ export default function DashboardPage() {
         const now = Date.now();
         setNowTs(now);
         setKpis(k);
+        if (!isDemo() && typeof window !== "undefined") {
+          try {
+            localStorage.setItem(KPI_CACHE, JSON.stringify(k));
+          } catch {
+            /* ignore quota */
+          }
+        }
         setInvoices(inv);
         setTopLieferanten(
           [...lief].sort((a, b) => b.gesamtvolumen - a.gesamtvolumen).slice(0, 5)
@@ -236,6 +255,11 @@ export default function DashboardPage() {
     return () => clearInterval(iv);
   }, [load]);
 
+  // Prefetch der meistgenutzten Folgeseiten für Instant-Navigation.
+  useEffect(() => {
+    ["/rechnungen", "/upload", "/review"].forEach((r) => router.prefetch(r));
+  }, [router]);
+
   // ── Abgeleitete Daten (reine Berechnungen) ──────────────────────────
   const trend = useMemo(() => kpis?.trend ?? [], [kpis]);
 
@@ -251,7 +275,7 @@ export default function DashboardPage() {
   }, [trend]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<InvoiceStatus, number> = {
+    const counts: Record<string, number> = {
       neu: 0,
       verarbeitet: 0,
       freigegeben: 0,

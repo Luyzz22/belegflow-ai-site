@@ -30,6 +30,7 @@ import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Brand";
 import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
 import EntitySwitcher from "@/components/EntitySwitcher";
+import DemoBanner from "@/components/DemoBanner";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -263,6 +264,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main id="hauptinhalt" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+          <DemoBanner />
           <Breadcrumbs />
           {children}
         </main>

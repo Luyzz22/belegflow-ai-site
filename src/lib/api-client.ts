@@ -8,6 +8,8 @@
 // Für direkte Backend-Calls kann NEXT_PUBLIC_API_URL gesetzt werden (dann ist
 // aber eine passende CORS-Konfiguration im Backend nötig).
 
+import * as demo from "@/lib/demo-data";
+
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/app";
 
 export const TOKEN_KEY = "flowcheck_token";
@@ -16,6 +18,17 @@ export const USER_KEY = "flowcheck_user";
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
+}
+
+// ── Demo-Modus (?demo=true) ──────────────────────────────────────────
+export function isDemo(): boolean {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem("flowcheck_demo") === "1";
+}
+export function setDemoMode(on: boolean) {
+  if (typeof window === "undefined") return;
+  if (on) sessionStorage.setItem("flowcheck_demo", "1");
+  else sessionStorage.removeItem("flowcheck_demo");
 }
 
 export function setSession(token: string, user?: AppUser) {
@@ -105,7 +118,7 @@ export interface AuthResponse {
   user: AppUser;
 }
 
-export type InvoiceStatus = "neu" | "verarbeitet" | "freigegeben" | "exportiert";
+export type InvoiceStatus = "neu" | "verarbeitet" | "freigegeben" | "exportiert" | "fehler";
 
 export interface InvoiceListItem {
   id: number;
@@ -253,17 +266,34 @@ export const flowcheckApi = {
     }),
 
   // Dashboard
-  kpis: () => api<DashboardKpis>("/dashboard/kpis"),
+  kpis: (): Promise<DashboardKpis> => (isDemo() ? Promise.resolve(demo.demoKpis()) : api<DashboardKpis>("/dashboard/kpis")),
 
   // Rechnungen
-  invoices: (params?: string) => api<InvoiceList>(`/invoices${params ? `?${params}` : ""}`),
-  invoice: (id: number) => api<InvoiceDetail>(`/invoices/${id}`),
+  invoices: (params?: string): Promise<InvoiceList> => {
+    if (isDemo()) {
+      let items = demo.demoInvoices();
+      const status = new URLSearchParams(params || "").get("status");
+      if (status) items = items.filter((i) => i.status === status);
+      return Promise.resolve({ items, total: items.length });
+    }
+    return api<InvoiceList>(`/invoices${params ? `?${params}` : ""}`);
+  },
+  invoice: (id: number): Promise<InvoiceDetail> => {
+    if (isDemo()) {
+      const d = demo.demoInvoice(id);
+      if (d) return Promise.resolve(d);
+      return Promise.reject(new ApiError("Rechnung nicht gefunden", 404));
+    }
+    return api<InvoiceDetail>(`/invoices/${id}`);
+  },
 
   // Upload (multipart) — Backend erwartet EIN Feld "file" pro Request.
   // Mehrere Dateien werden parallel als Einzel-Requests hochgeladen; Fehler
   // werden pro Datei zurückgegeben (kein Throw), damit die UI sie einzeln zeigt.
   upload: (files: File[]): Promise<UploadResult[]> =>
-    Promise.all(
+    isDemo()
+      ? Promise.resolve(files.map((f) => ({ filename: f.name, status: "ok" as const })))
+      : Promise.all(
       files.map(async (file): Promise<UploadResult> => {
         try {
           const res = await uploadFile("/upload", file);
@@ -287,23 +317,33 @@ export const flowcheckApi = {
     ),
 
   // Freigaben
-  freigaben: () => api<{ items: Freigabe[] }>("/freigaben"),
-  approve: (id: number) => api<{ ok: boolean }>(`/freigaben/${id}/approve`, { method: "POST" }),
-  reject: (id: number, grund: string) =>
-    api<{ ok: boolean }>(`/freigaben/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ grund }),
-    }),
+  freigaben: (): Promise<{ items: Freigabe[] }> => (isDemo() ? Promise.resolve(demo.demoFreigaben()) : api<{ items: Freigabe[] }>("/freigaben")),
+  approve: (id: number): Promise<{ ok: boolean }> =>
+    isDemo() ? Promise.resolve({ ok: true }) : api<{ ok: boolean }>(`/freigaben/${id}/approve`, { method: "POST" }),
+  reject: (id: number, grund: string): Promise<{ ok: boolean }> =>
+    isDemo()
+      ? Promise.resolve({ ok: true })
+      : api<{ ok: boolean }>(`/freigaben/${id}/reject`, { method: "POST", body: JSON.stringify({ grund }) }),
 
   // Lieferanten
-  lieferanten: () => api<{ items: Lieferant[] }>("/lieferanten"),
-  lieferant: (name: string) => api<LieferantDetail>(`/lieferanten/${encodeURIComponent(name)}`),
+  lieferanten: (): Promise<{ items: Lieferant[] }> =>
+    isDemo() ? Promise.resolve({ items: demo.demoLieferanten() }) : api<{ items: Lieferant[] }>("/lieferanten"),
+  lieferant: (name: string): Promise<LieferantDetail> =>
+    isDemo() ? Promise.resolve(demo.demoLieferantDetail(name)) : api<LieferantDetail>(`/lieferanten/${encodeURIComponent(name)}`),
 
   // DATEV-Export — Endpoints laut Design-Prompt
-  datevPreview: () =>
-    api<{ items: DatevBuchung[]; total: number }>("/datev/preview", { method: "POST" }),
+  datevPreview: (): Promise<{ items: DatevBuchung[]; total: number }> =>
+    isDemo() ? Promise.resolve(demo.demoDatev()) : api<{ items: DatevBuchung[]; total: number }>("/datev/preview", { method: "POST" }),
 
   // Audit
-  audit: (params?: string) => api<AuditList>(`/audit${params ? `?${params}` : ""}`),
+  audit: (params?: string): Promise<AuditList> => {
+    if (isDemo()) {
+      const all = demo.demoAudit();
+      const aktion = new URLSearchParams(params || "").get("aktion");
+      const items = aktion ? all.items.filter((a) => a.aktion.toLowerCase().includes(aktion.toLowerCase())) : all.items;
+      return Promise.resolve({ items, total: items.length });
+    }
+    return api<AuditList>(`/audit${params ? `?${params}` : ""}`);
+  },
   auditCsvUrl: () => `${API_BASE}/audit/export.csv`,
 };
