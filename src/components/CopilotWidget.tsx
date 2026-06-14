@@ -197,7 +197,7 @@ export default function CopilotWidget() {
       )}
 
       {open && (
-        <div className="fc-sheet-up fixed bottom-5 right-5 z-50 flex h-[500px] w-[calc(100vw-2.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl print:hidden">
+        <div className="fc-sheet-up fixed bottom-5 right-5 z-50 flex h-[500px] max-h-[70vh] w-[calc(100vw-2.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl print:hidden">
           {/* Header */}
           <div className="flex items-center justify-between bg-[#003856] px-4 py-3 text-white">
             <span className="flex items-center gap-2 font-semibold">

@@ -44,7 +44,7 @@ export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: nu
 /** KPI-/Karten-Platzhalter. */
 export function CardSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6">
           <Skeleton className="h-3 w-24" />
