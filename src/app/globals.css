@@ -84,6 +84,13 @@ body {
   background-size: 22px 22px;
 }
 
+/* Landing: schwebendes Produkt-Mockup */
+@keyframes fc-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.fc-float { animation: fc-float 3s ease-in-out infinite; }
+
 /* Toast: slide-in from right */
 @keyframes fc-toast-in {
   from { opacity: 0; transform: translateX(24px); }
