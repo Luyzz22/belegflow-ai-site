@@ -30,6 +30,32 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ── Dark Mode ────────────────────────────────────────────────
+   Globale Overrides der genutzten Farbklassen (die App verwendet
+   literale Hex-Werte). Deckt Flächen, Text und Rahmen ab. */
+html.dark { color-scheme: dark; background-color: #0f1117; }
+html.dark body { background-color: #0f1117; }
+
+html.dark .bg-white { background-color: #1a1d27 !important; }
+html.dark .bg-\[\#f8f6f3\] { background-color: #0f1117 !important; }
+html.dark .bg-\[\#faf9f7\] { background-color: #22252f !important; }
+
+html.dark .text-\[\#1a1a2e\] { color: #e4e4e7 !important; }
+html.dark .text-\[\#64748b\] { color: #a1a1aa !important; }
+html.dark .text-\[\#003856\] { color: #4da6d9 !important; }
+
+html.dark .border-\[rgba\(0\2c 56\2c 86\2c 0\.08\)\],
+html.dark .border-\[rgba\(0\2c 56\2c 86\2c 0\.06\)\],
+html.dark .border-\[rgba\(0\2c 56\2c 86\2c 0\.12\)\] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .fc-card { background: #1a1d27; border-color: rgba(255, 255, 255, 0.1); }
+html.dark input,
+html.dark select,
+html.dark textarea { background-color: #22252f; color: #e4e4e7; }
+html.dark *::-webkit-scrollbar-thumb { background: #3a3f4b; }
+
 /* Accessibility: einheitlicher Fokus-Ring auf interaktiven Elementen */
 :where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
   outline: 2px solid rgba(0, 56, 86, 0.35);

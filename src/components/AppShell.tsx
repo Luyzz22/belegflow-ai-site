@@ -32,6 +32,7 @@ import { LogoMark } from "@/components/Brand";
 import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
 import EntitySwitcher from "@/components/EntitySwitcher";
 import DemoBanner from "@/components/DemoBanner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -172,6 +173,10 @@ function SidebarPanel({
             <LogOut className="h-4 w-4" />
             {!collapsed && "Abmelden"}
           </button>
+        </div>
+
+        <div className={`mt-1 flex ${collapsed ? "justify-center" : ""}`}>
+          <ThemeToggle collapsed={collapsed} />
         </div>
 
         {/* Collapse toggle (desktop) */}
