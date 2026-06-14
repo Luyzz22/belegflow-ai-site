@@ -144,3 +144,14 @@ body {
   to { transform: translateY(0); }
 }
 .fc-sheet-up { animation: fc-sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Print: sauberes Report-Layout für Board-Präsentationen */
+@media print {
+  body { background: #fff; }
+  .fc-card,
+  section,
+  table { break-inside: avoid; }
+  h1, h2 { break-after: avoid; }
+  .fc-fade-in, .fc-rise, .fc-slide-in-right { animation: none !important; }
+  a { text-decoration: none !important; color: inherit !important; }
+}

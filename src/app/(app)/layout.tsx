@@ -5,18 +5,27 @@ import AuthGuard from "@/components/AuthGuard";
 import AppShell from "@/components/AppShell";
 import CommandMenu from "@/components/CommandMenu";
 import CopilotWidget from "@/components/CopilotWidget";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/toast/ToastProvider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AuthGuard>
-          <AppShell>{children}</AppShell>
-          <CommandMenu />
-          <CopilotWidget />
-        </AuthGuard>
-      </AuthProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <a
+        href="#hauptinhalt"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[300] focus:rounded-xl focus:bg-[#003856] focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Zum Hauptinhalt springen
+      </a>
+      <ToastProvider>
+        <AuthProvider>
+          <AuthGuard>
+            <AppShell>{children}</AppShell>
+            <CommandMenu />
+            <CopilotWidget />
+          </AuthGuard>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }

@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "FlowCheck AI+ — Eingangsrechnungen automatisch prüfen & DATEV-bereit machen",
+    default: "FlowCheck AI+ — KI-Rechnungsverarbeitung für den Mittelstand",
     template: "%s | FlowCheck AI+",
   },
   description:
-    "FlowCheck AI+ ist die KI-native Rechnungsverarbeitung für den deutschen Mittelstand. Von der E-Rechnung bis zum DATEV-Export — DSGVO-konform, GoBD-ready, Hosting in Deutschland.",
+    "Eingangsrechnungen automatisch prüfen, freigeben und DATEV-ready exportieren. KI-native. Hosting Deutschland. DSGVO-konform.",
   keywords: [
     "Rechnungsverarbeitung",
     "E-Rechnung",
