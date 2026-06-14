@@ -148,7 +148,11 @@ export default function CopilotWidget() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "bot", text: "Hallo! Ich bin Ihr FlowCheck Copilot ✨ — fragen Sie mich etwas zu Ihren Rechnungen." },
+    {
+      role: "bot",
+      text: "Hallo! Ich bin Ihr FlowCheck Copilot ✨ — fragen Sie mich etwas zu Ihren Rechnungen.",
+      cta: { label: "Brauchen Sie Hilfe? Hilfe-Center öffnen", href: "/hilfe" },
+    },
   ]);
   const dataRef = useRef<{ invoices: InvoiceListItem[]; lieferanten: Lieferant[]; kpis: DashboardKpis | null }>({
     invoices: [],

@@ -19,6 +19,7 @@ import {
   Coins,
   ShieldCheck,
   Settings,
+  HelpCircle,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -48,6 +49,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/roi", label: "ROI", icon: Coins },
   { href: "/compliance-center", label: "Compliance", icon: ShieldCheck },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
+  { href: "/hilfe", label: "Hilfe", icon: HelpCircle },
 ];
 
 function roleLabel(role?: string) {

@@ -22,6 +22,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   "compliance-center": "Compliance",
   report: "Wochenbericht",
   einstellungen: "Einstellungen",
+  hilfe: "Hilfe-Center",
   profil: "Profil",
 };
 

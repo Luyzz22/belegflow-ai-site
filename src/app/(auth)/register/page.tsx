@@ -82,7 +82,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-8 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
             <h1 className="text-2xl font-semibold tracking-tight text-[#003856]">Konto erstellen</h1>
-            <p className="mt-1 text-sm text-[#64748b]">30 Tage kostenlos testen — keine Kreditkarte nötig.</p>
+            <p className="mt-1 text-sm text-[#64748b]">Kostenlos registrieren — keine Kreditkarte erforderlich.</p>
 
             {error && (
               <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
@@ -90,7 +90,33 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <form onSubmit={submit} className="mt-6 space-y-4">
+            {/* OAuth (bald verfügbar) */}
+            <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {[
+                { label: "Mit Google", letter: "G" },
+                { label: "Mit Microsoft", letter: "M" },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  disabled
+                  title="Bald verfügbar"
+                  className="flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[rgba(0,56,86,0.12)] bg-white px-4 py-2.5 text-sm font-medium text-[#64748b] opacity-70"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#003856] text-[11px] font-bold text-white">
+                    {o.letter}
+                  </span>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div className="my-5 flex items-center gap-3 text-xs text-[#94a3b8]">
+              <span className="h-px flex-1 bg-[rgba(0,56,86,0.08)]" />
+              oder mit E-Mail
+              <span className="h-px flex-1 bg-[rgba(0,56,86,0.08)]" />
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-[#1a1a2e]">Name</label>
                 <input
