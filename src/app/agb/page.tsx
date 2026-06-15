@@ -6,73 +6,84 @@ export const metadata: Metadata = {
   description: "Allgemeine Geschäftsbedingungen für die Nutzung von FlowCheck AI+.",
 };
 
-const SECTIONS: { h: string; p: string[] }[] = [
-  {
-    h: "§ 1 Geltungsbereich",
-    p: [
-      "Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge über die Nutzung der Software-as-a-Service-Lösung FlowCheck AI+ zwischen der SBS Deutschland GmbH & Co. KG und dem Kunden.",
-    ],
-  },
-  {
-    h: "§ 2 Leistungsgegenstand",
-    p: [
-      "FlowCheck AI+ stellt Funktionen zur automatisierten Verarbeitung, Prüfung, Freigabe und zum Export von Eingangsrechnungen bereit. Der konkrete Funktionsumfang richtet sich nach dem gewählten Tarif.",
-    ],
-  },
-  {
-    h: "§ 3 Vertragsschluss und Testphase",
-    p: [
-      "Der Vertrag kommt mit Registrierung und Bestätigung zustande. Neue Kunden können den Dienst 30 Tage kostenlos testen.",
-    ],
-  },
-  {
-    h: "§ 4 Preise und Zahlung",
-    p: [
-      "Es gelten die zum Zeitpunkt der Bestellung gültigen Preise. Die Abrechnung erfolgt monatlich im Voraus, sofern nicht anders vereinbart.",
-    ],
-  },
-  {
-    h: "§ 5 Pflichten des Kunden",
-    p: [
-      "Der Kunde ist für die Richtigkeit der von ihm bereitgestellten Daten sowie für die Geheimhaltung seiner Zugangsdaten verantwortlich.",
-    ],
-  },
-  {
-    h: "§ 6 Verfügbarkeit",
-    p: [
-      "Wir bemühen uns um eine hohe Verfügbarkeit des Dienstes. Wartungsfenster werden, soweit möglich, rechtzeitig angekündigt.",
-    ],
-  },
-  {
-    h: "§ 7 Laufzeit und Kündigung",
-    p: [
-      "Sofern nicht anders vereinbart, ist der Vertrag monatlich kündbar. Kündigungen bedürfen der Textform.",
-    ],
-  },
-  {
-    h: "§ 8 Haftung",
-    p: [
-      "Die Haftung richtet sich nach den gesetzlichen Vorschriften. Für leichte Fahrlässigkeit haften wir nur bei Verletzung wesentlicher Vertragspflichten.",
-    ],
-  },
-];
+const H2 = "mt-7 text-base font-semibold text-[#003856]";
+const P = "mt-2";
 
 export default function AgbPage() {
   return (
     <PublicPage title="Allgemeine Geschäftsbedingungen" narrow>
-      <div className="space-y-8 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-stone-200/60">
-        {SECTIONS.map((s) => (
-          <section key={s.h}>
-            <h2 className="text-lg font-semibold text-[#003856]">{s.h}</h2>
-            {s.p.map((para, i) => (
-              <p key={i} className="mt-2 text-sm leading-relaxed text-stone-600">
-                {para}
-              </p>
-            ))}
-          </section>
-        ))}
-        <p className="border-t border-stone-100 pt-6 text-xs text-stone-400">
-          Hinweis: Diese AGB sind ein Mustertext und vor Veröffentlichung rechtlich zu prüfen.
+      <div className="rounded-2xl bg-white p-8 text-sm leading-relaxed text-stone-600 shadow-sm ring-1 ring-stone-200/60">
+        <p className="text-xs text-stone-400">Stand: Juni 2026</p>
+
+        <h2 className="mt-4 text-base font-semibold text-[#003856]">§ 1 Geltungsbereich</h2>
+        <p className={P}>
+          Diese AGB gelten für alle Verträge zwischen der SBS Deutschland GmbH &amp; Co. KG („Anbieter“) und ihren
+          Kunden über die Nutzung der Software „FlowCheck AI+“. Abweichende Bedingungen des Kunden gelten nur bei
+          ausdrücklicher schriftlicher Zustimmung.
+        </p>
+
+        <h2 className={H2}>§ 2 Vertragsgegenstand</h2>
+        <p className={P}>
+          Gegenstand ist die Bereitstellung von FlowCheck AI+ als Software-as-a-Service (SaaS) zur automatisierten
+          Verarbeitung von Eingangsrechnungen einschließlich KI-gestützter Extraktion, Validierung, Freigabe und
+          DATEV-Export.
+        </p>
+
+        <h2 className={H2}>§ 3 Registrierung und Account</h2>
+        <p className={P}>
+          Die Nutzung setzt ein Benutzerkonto voraus. Der Kunde ist für die Geheimhaltung seiner Zugangsdaten
+          verantwortlich und verpflichtet, Angaben aktuell zu halten.
+        </p>
+
+        <h2 className={H2}>§ 4 Leistungsbeschreibung</h2>
+        <p className={P}>
+          Der Funktionsumfang richtet sich nach dem gebuchten Tarif. Der Anbieter darf die Software weiterentwickeln,
+          sofern der vereinbarte Leistungskern erhalten bleibt.
+        </p>
+
+        <h2 className={H2}>§ 5 Vergütung und Zahlung</h2>
+        <p className={P}>
+          Die Vergütung richtet sich nach dem gewählten Tarif und ist monatlich im Voraus fällig. Die Abrechnung
+          erfolgt über den Zahlungsdienstleister Stripe.
+        </p>
+
+        <h2 className={H2}>§ 6 Verfügbarkeit</h2>
+        <p className={P}>
+          Der Anbieter strebt eine Verfügbarkeit von 99,5 % im Jahresmittel an. Hiervon ausgenommen sind angekündigte
+          Wartungsfenster und Störungen außerhalb des Einflussbereichs des Anbieters.
+        </p>
+
+        <h2 className={H2}>§ 7 Datenschutz</h2>
+        <p className={P}>
+          Es gelten die <a href="/datenschutz" className="text-[#003856] hover:underline">Datenschutzerklärung</a> und
+          die <a href="/avv" className="text-[#003856] hover:underline">Auftragsverarbeitungsvereinbarung</a> nach
+          Art. 28 DSGVO.
+        </p>
+
+        <h2 className={H2}>§ 8 KI-Transparenz</h2>
+        <p className={P}>
+          FlowCheck AI+ kennzeichnet KI-generierte Inhalte gemäß Art. 50 EU AI Act. Freigaben erfolgen ausschließlich
+          durch den Kunden (Human-in-the-Loop); es werden keine automatisierten Einzelentscheidungen mit rechtlicher
+          Wirkung getroffen.
+        </p>
+
+        <h2 className={H2}>§ 9 Haftung</h2>
+        <p className={P}>
+          Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie nach dem Produkthaftungsgesetz.
+          Bei einfacher Fahrlässigkeit haftet der Anbieter nur bei Verletzung wesentlicher Vertragspflichten und
+          begrenzt auf den vertragstypischen, vorhersehbaren Schaden.
+        </p>
+
+        <h2 className={H2}>§ 10 Laufzeit und Kündigung</h2>
+        <p className={P}>
+          Verträge sind monatlich kündbar zum Ende des jeweiligen Abrechnungszeitraums. Das Recht zur außerordentlichen
+          Kündigung aus wichtigem Grund bleibt unberührt.
+        </p>
+
+        <h2 className={H2}>§ 11 Schlussbestimmungen</h2>
+        <p className={P}>
+          Es gilt deutsches Recht. Sollte eine Bestimmung unwirksam sein, bleibt die Wirksamkeit der übrigen
+          Bestimmungen unberührt.
         </p>
       </div>
     </PublicPage>
