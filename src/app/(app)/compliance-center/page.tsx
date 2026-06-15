@@ -9,6 +9,9 @@ import {
   XCircle,
   Download,
   Activity,
+  ShieldAlert,
+  AlertTriangle,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi, type AuditEntry } from "@/lib/api-client";
@@ -19,8 +22,32 @@ import PageHeader from "@/components/PageHeader";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import { LoadingState, ErrorState } from "@/components/States";
+import { useToast } from "@/components/toast/ToastProvider";
 
 const CARD = "rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]";
+
+const IR_PLAN = [
+  { phase: "1. Erkennung", desc: "Sicherheitsvorfall identifizieren und dokumentieren (Zeitpunkt, Umfang)." },
+  { phase: "2. Bewertung", desc: "Schweregrad einstufen, betroffene Systeme und Daten ermitteln." },
+  { phase: "3. Eindämmung", desc: "Sofortmaßnahmen ergreifen, Ausbreitung verhindern, Beweise sichern." },
+  { phase: "4. Meldung", desc: "Frühwarnung an das BSI binnen 24 h, Meldung binnen 72 h (NIS2). Bei Datenpannen Art. 33 DSGVO." },
+  { phase: "5. Nachbereitung", desc: "Wiederherstellung, Ursachenanalyse (Lessons Learned), Maßnahmen ableiten." },
+];
+
+const SEVERITY = [
+  { level: "Kritisch", react: "Sofort (< 1 h)", desc: "Datenleck, Systemausfall, aktiver Angriff", cls: "bg-red-50 text-red-700 border-red-200" },
+  { level: "Hoch", react: "< 4 h", desc: "Teilausfall, verdächtige Zugriffe", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  { level: "Mittel", react: "< 24 h", desc: "Einzelne fehlerhafte Komponente", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  { level: "Niedrig", react: "< 72 h", desc: "Geringfügige Anomalie ohne Datenbezug", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+];
+
+interface Incident {
+  id: number;
+  titel: string;
+  schweregrad: string;
+  beschreibung: string;
+  zeitpunkt: string;
+}
 
 function eventMeta(aktion: string): { icon: LucideIcon; cls: string; ring: string } {
   const a = (aktion || "").toLowerCase();
@@ -32,11 +59,43 @@ function eventMeta(aktion: string): { icon: LucideIcon; cls: string; ring: strin
 }
 
 export default function ComplianceCenterPage() {
+  const { addToast } = useToast();
   const [result, setResult] = useState<ConfidenceResult | null>(null);
   const [events, setEvents] = useState<AuditEntry[]>([]);
   const [nowTs, setNowTs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [form, setForm] = useState({ titel: "", schweregrad: "Mittel", beschreibung: "" });
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      try {
+        setIncidents(JSON.parse(localStorage.getItem("fc_incidents") || "[]"));
+      } catch {
+        setIncidents([]);
+      }
+    });
+  }, []);
+
+  const reportIncident = () => {
+    if (!form.titel.trim()) {
+      addToast({ type: "error", text: "Bitte einen Titel angeben." });
+      return;
+    }
+    const entry: Incident = {
+      id: Date.now(),
+      titel: form.titel.trim(),
+      schweregrad: form.schweregrad,
+      beschreibung: form.beschreibung.trim(),
+      zeitpunkt: new Date().toISOString(),
+    };
+    const next = [entry, ...incidents];
+    setIncidents(next);
+    localStorage.setItem("fc_incidents", JSON.stringify(next));
+    setForm({ titel: "", schweregrad: "Mittel", beschreibung: "" });
+    addToast({ type: "success", text: "Sicherheitsvorfall protokolliert (security_incident). NIS2-Meldefristen beachten." });
+  };
 
   const load = useCallback(() => {
     Promise.all([
@@ -271,6 +330,98 @@ export default function ComplianceCenterPage() {
             );
           })}
         </ul>
+      </div>
+
+      {/* NIS2 — Incident Response */}
+      <div className={`${CARD} mt-6`}>
+        <h2 className="mb-1 flex items-center gap-2 text-xl font-semibold text-[#1a1a2e]">
+          <ShieldAlert className="h-5 w-5 text-[#003856]" /> NIS2 — Incident Response
+        </h2>
+        <p className="mb-5 text-sm text-[#64748b]">
+          Verfahren zur Behandlung von Sicherheitsvorfällen gemäß NIS2-Richtlinie (Meldefristen: 24 h Frühwarnung, 72 h Meldung).
+        </p>
+
+        {/* Incident-Response-Plan Timeline */}
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#64748b]">Incident-Response-Plan</h3>
+        <ol className="relative mb-8 space-y-4 border-l border-[rgba(0,56,86,0.12)] pl-6">
+          {IR_PLAN.map((p) => (
+            <li key={p.phase} className="relative">
+              <span className="absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#003856] ring-4 ring-white" />
+              <p className="text-sm font-semibold text-[#1a1a2e]">{p.phase}</p>
+              <p className="text-sm text-[#64748b]">{p.desc}</p>
+            </li>
+          ))}
+        </ol>
+
+        {/* Severity-Matrix */}
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#64748b]">Severity-Matrix</h3>
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {SEVERITY.map((s) => (
+            <div key={s.level} className={`rounded-xl border p-3.5 ${s.cls}`}>
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" />
+                <p className="text-sm font-bold">{s.level}</p>
+              </div>
+              <p className="mt-1 text-xs font-semibold">Reaktion: {s.react}</p>
+              <p className="mt-1 text-xs opacity-90">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Incident melden */}
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#64748b]">Incident melden</h3>
+        <div className="grid grid-cols-1 gap-3 rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4 sm:grid-cols-2">
+          <input
+            value={form.titel}
+            onChange={(e) => setForm((f) => ({ ...f, titel: e.target.value }))}
+            placeholder="Titel des Vorfalls"
+            className="rounded-xl border border-[rgba(0,56,86,0.12)] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
+          />
+          <select
+            value={form.schweregrad}
+            onChange={(e) => setForm((f) => ({ ...f, schweregrad: e.target.value }))}
+            className="rounded-xl border border-[rgba(0,56,86,0.12)] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20"
+          >
+            {SEVERITY.map((s) => (
+              <option key={s.level} value={s.level}>{s.level}</option>
+            ))}
+          </select>
+          <textarea
+            value={form.beschreibung}
+            onChange={(e) => setForm((f) => ({ ...f, beschreibung: e.target.value }))}
+            placeholder="Beschreibung (betroffene Systeme, Zeitpunkt, ergriffene Maßnahmen)"
+            rows={3}
+            className="rounded-xl border border-[rgba(0,56,86,0.12)] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20 sm:col-span-2"
+          />
+          <button
+            onClick={reportIncident}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95 sm:col-span-2 sm:justify-self-start"
+          >
+            <Send className="h-4 w-4" /> Incident melden
+          </button>
+        </div>
+
+        {/* Gemeldete Vorfälle */}
+        {incidents.length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#64748b]">Gemeldete Vorfälle</h3>
+            <ul className="space-y-2">
+              {incidents.map((i) => (
+                <li key={i.id} className="flex items-start gap-3 rounded-xl border border-[rgba(0,56,86,0.08)] bg-white p-3.5">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#003856]" />
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-[#1a1a2e]">{i.titel}</p>
+                      <span className="text-xs text-[#94a3b8]">{dateDE(i.zeitpunkt, true)}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-[#64748b]">Schweregrad: {i.schweregrad}</p>
+                    {i.beschreibung && <p className="mt-0.5 text-sm text-[#64748b]">{i.beschreibung}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

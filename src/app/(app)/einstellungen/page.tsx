@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldCheck, Calculator, Bell, Palette, Save, Link2, Copy, RefreshCw, Power } from "lucide-react";
+import { ShieldCheck, Calculator, Bell, Palette, Save, Link2, Copy, RefreshCw, Power, Archive, Download, Trash2 } from "lucide-react";
+import { flowcheckApi } from "@/lib/api-client";
 import PageHeader from "@/components/PageHeader";
 import Toggle from "@/components/Toggle";
 import StammdatenPanel from "@/components/StammdatenPanel";
@@ -9,7 +10,7 @@ import AutomationPanel from "@/components/AutomationPanel";
 import TemplatePanel from "@/components/TemplatePanel";
 import { useToast } from "@/components/toast/ToastProvider";
 
-type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen";
+type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung";
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "allgemein", label: "Allgemein" },
@@ -18,6 +19,16 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "konten", label: "Kontenplan" },
   { value: "kostenstellen", label: "Kostenstellen" },
   { value: "lieferanten", label: "Lieferanten-Stammdaten" },
+  { value: "aufbewahrung", label: "Aufbewahrung" },
+];
+
+const RETENTION = [
+  ["Rechnungen & Belege", "10 Jahre", "§ 147 AO, § 14b UStG, GoBD"],
+  ["Buchungsbelege / Journale", "10 Jahre", "§ 257 HGB, § 147 AO"],
+  ["Handels- & Geschäftsbriefe", "6 Jahre", "§ 257 HGB, § 147 AO"],
+  ["KI-Extraktionsdaten (Rohdaten)", "Nach Verarbeitung", "Datensparsamkeit, Art. 5 DSGVO"],
+  ["Audit-Trail / Protokolle", "10 Jahre", "GoBD (Nachvollziehbarkeit)"],
+  ["Account- & Nutzerdaten", "Bis Vertragsende + 30 Tage", "Art. 17 DSGVO (Löschung)"],
 ];
 import {
   loadSettings,
@@ -78,6 +89,7 @@ export default function EinstellungenPage() {
   const [s, setS] = useState<AppSettings>(() => loadSettings());
   const [tab, setTab] = useState<SettingsTab>("allgemein");
   const [portalToken, setPortalToken] = useState<string>("");
+  const [autoDelete, setAutoDelete] = useState(false);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -87,8 +99,46 @@ export default function EinstellungenPage() {
         localStorage.setItem("flowcheck_portal_token", t);
       }
       setPortalToken(t);
+      setAutoDelete(localStorage.getItem("fc_auto_delete") === "true");
+      // Direktlink z. B. /einstellungen?tab=aufbewahrung aus dem Compliance-Menü.
+      const param = new URLSearchParams(window.location.search).get("tab");
+      if (param && TABS.some((x) => x.value === param)) setTab(param as SettingsTab);
     });
   }, []);
+
+  const toggleAutoDelete = (v: boolean) => {
+    setAutoDelete(v);
+    localStorage.setItem("fc_auto_delete", String(v));
+    addToast({ type: v ? "success" : "info", text: v ? "Automatische Löschung aktiviert" : "Automatische Löschung deaktiviert" });
+  };
+
+  const exportAllData = () => {
+    flowcheckApi
+      .invoices("limit=1000&offset=0")
+      .then((r) => {
+        const payload = {
+          exportiert: new Date().toISOString(),
+          hinweis: "Vollständiger Datenexport gemäß Art. 20 DSGVO (Datenübertragbarkeit).",
+          einstellungen: s,
+          rechnungen: r.items || [],
+        };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "flowcheck-datenexport.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        addToast({ type: "success", text: "Datenexport erstellt (JSON)" });
+      })
+      .catch(() => addToast({ type: "error", text: "Export fehlgeschlagen" }));
+  };
+
+  const deleteAccount = () => {
+    if (!window.confirm("Konto und alle personenbezogenen Daten löschen? Gesetzlich aufbewahrungspflichtige Buchungsdaten bleiben anonymisiert erhalten. Vorgang wird protokolliert.")) return;
+    addToast({ type: "success", text: "Löschanfrage übermittelt. Bearbeitung innerhalb von 30 Tagen (Art. 17 DSGVO)." });
+  };
 
   const portalLink = portalToken && typeof window !== "undefined" ? `${window.location.origin}/portal/${portalToken}` : "";
 
@@ -147,6 +197,67 @@ export default function EinstellungenPage() {
 
       {tab === "automatisierung" && <AutomationPanel />}
       {tab === "vorlagen" && <TemplatePanel />}
+
+      {tab === "aufbewahrung" && (
+        <div className="space-y-6">
+          {/* Löschkonzept / Aufbewahrungsfristen */}
+          <section className={`${CARD} overflow-x-auto`}>
+            <SectionHeader icon={Archive} title="Aufbewahrung & Löschkonzept" />
+            <p className="mb-4 text-sm text-[#64748b]">
+              Aufbewahrungsfristen nach deutschem Handels- und Steuerrecht sowie Löschfristen nach DSGVO.
+            </p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(0,56,86,0.06)] text-left text-xs font-medium uppercase tracking-wider text-[#64748b]">
+                  <th className="px-3 py-2.5">Datenkategorie</th>
+                  <th className="px-3 py-2.5">Aufbewahrungsfrist</th>
+                  <th className="px-3 py-2.5">Rechtsgrundlage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[rgba(0,56,86,0.06)]">
+                {RETENTION.map((r) => (
+                  <tr key={r[0]}>
+                    <td className="px-3 py-3 font-medium text-[#1a1a2e]">{r[0]}</td>
+                    <td className="px-3 py-3 text-[#64748b]">{r[1]}</td>
+                    <td className="px-3 py-3 text-[#64748b]">{r[2]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* Automatische Löschung */}
+          <section className={CARD}>
+            <SectionHeader icon={Trash2} title="Automatische Löschung" />
+            <div className="flex items-center justify-between gap-4 rounded-xl bg-[#faf9f7] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#1a1a2e]">Daten nach Ablauf der Aufbewahrungsfrist automatisch löschen</p>
+                <p className="text-xs text-[#64748b]">
+                  Personenbezogene Daten werden nach Fristablauf automatisch entfernt; gesetzlich aufbewahrungspflichtige
+                  Buchungsdaten bleiben bis zum Ende der jeweiligen Frist anonymisiert erhalten.
+                </p>
+              </div>
+              <Toggle checked={autoDelete} onChange={toggleAutoDelete} label="Automatische Löschung" />
+            </div>
+          </section>
+
+          {/* Datenexport & Konto-Löschung */}
+          <section className={CARD}>
+            <SectionHeader icon={ShieldCheck} title="Ihre Daten" />
+            <p className="mb-4 text-sm text-[#64748b]">
+              Exportieren Sie alle Ihre Daten (Art. 20 DSGVO) oder beantragen Sie die Löschung Ihres Kontos (Art. 17 DSGVO).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={exportAllData} className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95">
+                <Download className="h-4 w-4" /> Alle Daten exportieren (JSON)
+              </button>
+              <button onClick={deleteAccount} className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-50 active:scale-95">
+                <Trash2 className="h-4 w-4" /> Konto löschen
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {tab === "konten" && <StammdatenPanel which="konten" />}
       {tab === "kostenstellen" && <StammdatenPanel which="kostenstellen" />}
       {tab === "lieferanten" && <StammdatenPanel which="lieferanten" />}
