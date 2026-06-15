@@ -173,6 +173,8 @@ export default function EinstellungenPage() {
     setS((p) => ({ ...p, benachrichtigungen: { ...p.benachrichtigungen, ...patch } }));
   const setDarstellung = (patch: Partial<AppSettings["darstellung"]>) =>
     setS((p) => ({ ...p, darstellung: { ...p.darstellung, ...patch } }));
+  const setDatenschutz = (patch: Partial<AppSettings["datenschutz"]>) =>
+    setS((p) => ({ ...p, datenschutz: { ...p.datenschutz, ...patch } }));
 
   return (
     <div className="fc-fade-in">
@@ -461,6 +463,56 @@ export default function EinstellungenPage() {
               <Power className="h-4 w-4" /> Portal aktivieren
             </button>
           )}
+        </section>
+
+        {/* Datenschutz — Privacy-First Defaults */}
+        <section className={`${CARD} lg:col-span-2`}>
+          <SectionHeader icon={ShieldCheck} title="Datenschutz" />
+          <p className="mb-4 text-sm text-[#64748b]">
+            Datenschutzfreundliche Voreinstellungen. Alle empfohlenen Optionen sind standardmäßig aktiv.
+          </p>
+          <div>
+            <ToggleRow
+              label="KI-Extraktion nur für Pflichtfelder (keine Freitext-Analyse)"
+              checked={s.datenschutz.kiNurPflichtfelder}
+              onChange={(v) => setDatenschutz({ kiNurPflichtfelder: v })}
+            />
+            <ToggleRow
+              label="Rechnungsdaten nach DATEV-Export anonymisierbar"
+              checked={s.datenschutz.anonymisierbarNachExport}
+              onChange={(v) => setDatenschutz({ anonymisierbarNachExport: v })}
+            />
+            <ToggleRow
+              label="Audit-Trail ohne personenbezogene Details"
+              checked={s.datenschutz.auditOhnePersonenbezug}
+              onChange={(v) => setDatenschutz({ auditOhnePersonenbezug: v })}
+            />
+            <ToggleRow
+              label="Session nach 8 Stunden automatisch beenden"
+              checked={s.datenschutz.sessionTimeout8h}
+              onChange={(v) => setDatenschutz({ sessionTimeout8h: v })}
+            />
+          </div>
+          <div className="mt-4 rounded-xl border border-[rgba(0,56,86,0.1)] bg-[#faf9f7] p-4">
+            <label className="flex items-start justify-between gap-4">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-[#1a1a2e]">Erweiterte KI-Analyse</span>
+                <span className="mt-0.5 block text-xs text-[#64748b]">
+                  Aktiviert zusätzliche KI-Funktionen (Freitext, Skonto-Erkennung, Lieferanten-Insights). Dabei werden
+                  mehr Rechnungsdaten an den KI-Provider übermittelt.
+                </span>
+                <a href="/trust" className="mt-1 inline-block text-xs font-medium text-[#003856] hover:underline">
+                  Details zur Datenverarbeitung →
+                </a>
+              </span>
+              <Toggle
+                checked={s.datenschutz.erweiterteKiAnalyse}
+                onChange={(v) => setDatenschutz({ erweiterteKiAnalyse: v })}
+                label="Erweiterte KI-Analyse"
+              />
+            </label>
+          </div>
+          <SaveButton onClick={() => persist("Datenschutz")} />
         </section>
       </div>
       )}
