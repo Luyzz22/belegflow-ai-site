@@ -22,6 +22,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   cashflow: "Cash Flow",
   roi: "ROI",
   "compliance-center": "Compliance",
+  "datenschutz-center": "Datenschutz",
+  "ki-governance": "KI-Governance",
   report: "Wochenbericht",
   einstellungen: "Einstellungen",
   entwickler: "Entwickler",

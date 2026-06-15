@@ -15,16 +15,16 @@ export default function ImpressumPage() {
           <p className="mt-2">
             SBS Deutschland GmbH &amp; Co. KG
             <br />
-            Musterstraße 1
+            In der Dell 19
             <br />
-            12345 Musterstadt
+            69469 Weinheim
             <br />
             Deutschland
           </p>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-[#003856]">Vertretung</h2>
-          <p className="mt-2">Vertretungsberechtigte Geschäftsführung: Geschäftsführer der Komplementär-GmbH</p>
+          <p className="mt-2">Geschäftsführer: Andreas Schenk</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-[#003856]">Kontakt</h2>
@@ -38,21 +38,30 @@ export default function ImpressumPage() {
         <section>
           <h2 className="text-lg font-semibold text-[#003856]">Registereintrag</h2>
           <p className="mt-2">
-            Eingetragen im Handelsregister.
+            Registergericht: Amtsgericht Mannheim
             <br />
-            Registergericht: Amtsgericht Musterstadt
-            <br />
-            Registernummer: HRA 00000
+            Registernummer: HRA 706204
           </p>
         </section>
         <section>
-          <h2 className="text-lg font-semibold text-[#003856]">Umsatzsteuer-ID</h2>
-          <p className="mt-2">USt-IdNr. gemäß § 27a UStG: DE000000000</p>
+          <h2 className="text-lg font-semibold text-[#003856]">Umsatzsteuer-Identifikationsnummer</h2>
+          <p className="mt-2">USt-IdNr. gemäß § 27a UStG: DE345927327</p>
         </section>
-        <p className="border-t border-stone-100 pt-6 text-xs text-stone-400">
-          Hinweis: Die hier hinterlegten Angaben sind Platzhalter und vor Veröffentlichung durch die rechtsverbindlichen
-          Unternehmensdaten zu ersetzen.
-        </p>
+        <section>
+          <h2 className="text-lg font-semibold text-[#003856]">Inhaltlich verantwortlich gemäß § 18 Abs. 2 MStV</h2>
+          <p className="mt-2">
+            Luis Schenk
+            <br />
+            In der Dell 19, 69469 Weinheim
+          </p>
+        </section>
+        <section>
+          <h2 className="text-lg font-semibold text-[#003856]">Verbraucherstreitbeilegung</h2>
+          <p className="mt-2">
+            Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer
+            Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).
+          </p>
+        </section>
       </div>
     </PublicPage>
   );

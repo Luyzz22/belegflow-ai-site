@@ -27,6 +27,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
@@ -37,7 +38,14 @@ import EntitySwitcher from "@/components/EntitySwitcher";
 import DemoBanner from "@/components/DemoBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  children?: { href: string; label: string }[];
+}
+
+const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Upload", icon: Upload },
   { href: "/review", label: "Review", icon: Zap },
@@ -53,7 +61,17 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/prozesse", label: "Prozesse", icon: Workflow },
   { href: "/cashflow", label: "Cash Flow", icon: Droplets },
   { href: "/roi", label: "ROI", icon: Coins },
-  { href: "/compliance-center", label: "Compliance", icon: ShieldCheck },
+  {
+    href: "/compliance-center",
+    label: "Compliance",
+    icon: ShieldCheck,
+    children: [
+      { href: "/compliance-center", label: "Compliance-Center" },
+      { href: "/datenschutz-center", label: "Datenschutz" },
+      { href: "/ki-governance", label: "KI-Governance" },
+      { href: "/einstellungen?tab=aufbewahrung", label: "Aufbewahrung" },
+    ],
+  },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
   { href: "/entwickler", label: "Entwickler", icon: Terminal },
   { href: "/hilfe", label: "Hilfe", icon: HelpCircle },
@@ -90,6 +108,7 @@ function SidebarPanel({
   onToggleCollapse?: () => void;
 }) {
   const initial = (user?.name || user?.email || "?").slice(0, 1).toUpperCase();
+  const [openGroup, setOpenGroup] = useState("");
 
   return (
     <div className="flex h-full flex-col bg-[#003856] text-white">
@@ -115,6 +134,46 @@ function SidebarPanel({
         {NAV.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+
+          // Gruppe mit Untermenü (z. B. Compliance) — nur im ausgeklappten Zustand.
+          if (item.children && !collapsed) {
+            const groupActive = item.children.some((c) => pathname === c.href.split("?")[0]);
+            const isOpen = openGroup === item.href || groupActive;
+            return (
+              <div key={item.href}>
+                <button
+                  onClick={() => setOpenGroup(isOpen ? "__none" : item.href)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    groupActive ? "text-white" : "text-white/65 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
+                {isOpen && (
+                  <div className="ml-7 mt-1 space-y-1 border-l border-white/10 pl-2">
+                    {item.children.map((c) => {
+                      const cActive = pathname === c.href.split("?")[0];
+                      return (
+                        <Link
+                          key={c.href}
+                          href={c.href}
+                          onClick={onNavigate}
+                          className={`block rounded-lg px-3 py-2 text-sm transition ${
+                            cActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          {c.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.href}
