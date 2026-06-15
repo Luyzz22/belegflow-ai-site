@@ -47,6 +47,8 @@ import Toast from "@/components/Toast";
 import { LoadingState, ErrorState } from "@/components/States";
 import { recordFeedback, getFeedbackFor, getAccuracy } from "@/lib/kiFeedback";
 import { isPaid } from "@/lib/payments";
+import { getTemplates, type KontierungsVorlage } from "@/lib/templates";
+import InvoiceComments from "@/components/InvoiceComments";
 
 type Tab = "validierung" | "kontierung" | "anomalien" | "ki" | "fluss";
 type Flash = { type: "success" | "error"; text: string } | null;
@@ -150,6 +152,7 @@ export default function InvoiceDetailPage() {
   const [kontMemory, setKontMemory] = useState<KontierungMemory | null>(null);
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [accuracy, setAccuracy] = useState<{ pct: number; count: number }>({ pct: 0, count: 0 });
+  const [templates] = useState<KontierungsVorlage[]>(() => getTemplates());
 
   // Lieferanten-Historie für den Konfidenz-Score (Name → Anzahl Rechnungen).
   useEffect(() => {
@@ -342,6 +345,23 @@ export default function InvoiceDetailPage() {
   });
   // Breakdown auto-offen wenn Score < 90 %, manuell per Ring-Klick umschaltbar.
   const breakdownOpen = breakdownOverride ?? confidence.score < 90;
+
+  // KI-Zusammenfassung (client-seitig aus den vorhandenen Daten).
+  const kiSummary = [
+    `Rechnung ${view.rechnungsnummer || `#${view.id}`} von ${view.lieferant || "—"} über ${eur(view.betrag, view.waehrung)}.`,
+    pflicht.length > 0 && pflicht.every((p) => (typeof p === "string" ? true : !!p.vorhanden))
+      ? "Alle Pflichtangaben vollständig,"
+      : "Pflichtangaben unvollständig,",
+    `IBAN ${view.validierung?.iban_valid ? "gültig" : "nicht verifiziert"},`,
+    `USt-ID ${view.validierung?.ustid_valid ? "gültig" : "nicht verifiziert"}.`,
+    view.kontierung?.konto && view.kontierung.konto !== "-"
+      ? `Kontierung: ${view.kontierung.konto}/${view.kontierung.gegenkonto} (SK ${view.kontierung.steuerschluessel}).`
+      : "Keine Kontierung hinterlegt.",
+    skonto ? `Skonto: ${skonto.prozent}% bei Zahlung bis ${dateDE(new Date(skonto.fristMs).toISOString())} (Ersparnis: ${eur(skonto.ersparnis, view.waehrung)}).` : "",
+    `KI-Konfidenz: ${confidence.score}%.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const startEdit = () => {
     setForm({
@@ -694,10 +714,30 @@ export default function InvoiceDetailPage() {
           {activeTab === "kontierung" && (
             <div>
               {editingK ? (
-                <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-                  <EditField label="Konto" value={formK.konto} onChange={(v) => setFormK((p) => ({ ...p, konto: v }))} />
-                  <EditField label="Gegenkonto" value={formK.gegenkonto} onChange={(v) => setFormK((p) => ({ ...p, gegenkonto: v }))} />
-                  <EditField label="Steuerschlüssel" value={formK.steuerschluessel} onChange={(v) => setFormK((p) => ({ ...p, steuerschluessel: v }))} />
+                <div>
+                  <div className="mb-3">
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-[#64748b]">Vorlage anwenden</label>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const t = templates.find((x) => x.id === e.target.value);
+                        if (t) setFormK({ konto: t.konto, gegenkonto: t.gegenkonto, steuerschluessel: t.steuerschluessel });
+                      }}
+                      className="w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-3 py-2 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20 sm:w-auto"
+                    >
+                      <option value="">Vorlage wählen …</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.emoji} {t.name} ({t.konto})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+                    <EditField label="Konto" value={formK.konto} onChange={(v) => setFormK((p) => ({ ...p, konto: v }))} />
+                    <EditField label="Gegenkonto" value={formK.gegenkonto} onChange={(v) => setFormK((p) => ({ ...p, gegenkonto: v }))} />
+                    <EditField label="Steuerschlüssel" value={formK.steuerschluessel} onChange={(v) => setFormK((p) => ({ ...p, steuerschluessel: v }))} />
+                  </div>
                 </div>
               ) : (
                 <div>
@@ -977,6 +1017,9 @@ export default function InvoiceDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Notizen & Kommentare */}
+      <InvoiceComments invoiceId={view.id} summary={kiSummary} />
 
       {/* Aktionen */}
       <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-4 shadow-[0_1px_3px_rgba(0,56,86,0.06)] sm:flex-row sm:items-center sm:justify-end">

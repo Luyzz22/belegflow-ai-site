@@ -5,12 +5,16 @@ import { ShieldCheck, Calculator, Bell, Palette, Save, Link2, Copy, RefreshCw, P
 import PageHeader from "@/components/PageHeader";
 import Toggle from "@/components/Toggle";
 import StammdatenPanel from "@/components/StammdatenPanel";
+import AutomationPanel from "@/components/AutomationPanel";
+import TemplatePanel from "@/components/TemplatePanel";
 import { useToast } from "@/components/toast/ToastProvider";
 
-type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten";
+type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen";
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "allgemein", label: "Allgemein" },
+  { value: "automatisierung", label: "Automatisierung" },
+  { value: "vorlagen", label: "Vorlagen" },
   { value: "konten", label: "Kontenplan" },
   { value: "kostenstellen", label: "Kostenstellen" },
   { value: "lieferanten", label: "Lieferanten-Stammdaten" },
@@ -141,6 +145,8 @@ export default function EinstellungenPage() {
         ))}
       </div>
 
+      {tab === "automatisierung" && <AutomationPanel />}
+      {tab === "vorlagen" && <TemplatePanel />}
       {tab === "konten" && <StammdatenPanel which="konten" />}
       {tab === "kostenstellen" && <StammdatenPanel which="kostenstellen" />}
       {tab === "lieferanten" && <StammdatenPanel which="lieferanten" />}
