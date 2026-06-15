@@ -37,6 +37,7 @@ import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
 import EntitySwitcher from "@/components/EntitySwitcher";
 import DemoBanner from "@/components/DemoBanner";
 import ThemeToggle from "@/components/ThemeToggle";
+import TrustBadges from "@/components/TrustBadges";
 
 interface NavItem {
   href: string;
@@ -364,6 +365,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <DemoBanner />
           <Breadcrumbs />
           {children}
+          <div className="mt-10 border-t border-[rgba(0,56,86,0.08)] pt-6 print:hidden">
+            <TrustBadges />
+          </div>
         </main>
       </div>
     </div>

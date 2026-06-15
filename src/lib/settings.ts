@@ -25,6 +25,13 @@ export interface AppSettings {
     waehrung: Waehrung;
     datumsformat: Datumsformat;
   };
+  datenschutz: {
+    kiNurPflichtfelder: boolean;
+    anonymisierbarNachExport: boolean;
+    auditOhnePersonenbezug: boolean;
+    sessionTimeout8h: boolean;
+    erweiterteKiAnalyse: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -32,6 +39,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   kontierung: { konto: "4400", gegenkonto: "1200", kontenrahmen: "SKR03" },
   benachrichtigungen: { neueRechnungen: true, anomalien: true, taeglich: false },
   darstellung: { waehrung: "EUR", datumsformat: "DD.MM.YYYY" },
+  datenschutz: {
+    kiNurPflichtfelder: true,
+    anonymisierbarNachExport: true,
+    auditOhnePersonenbezug: true,
+    sessionTimeout8h: true,
+    erweiterteKiAnalyse: false,
+  },
 };
 
 const KEY = "flowcheck_settings";
@@ -47,6 +61,7 @@ export function loadSettings(): AppSettings {
       kontierung: { ...DEFAULT_SETTINGS.kontierung, ...parsed.kontierung },
       benachrichtigungen: { ...DEFAULT_SETTINGS.benachrichtigungen, ...parsed.benachrichtigungen },
       darstellung: { ...DEFAULT_SETTINGS.darstellung, ...parsed.darstellung },
+      datenschutz: { ...DEFAULT_SETTINGS.datenschutz, ...parsed.datenschutz },
     };
   } catch {
     return DEFAULT_SETTINGS;

@@ -198,6 +198,18 @@ export default function UploadPage() {
         </p>
       </div>
 
+      {/* Vertrauensbildender Datenschutz-Hinweis */}
+      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] px-4 py-3 text-sm text-[#64748b]">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#003856]" />
+        <p>
+          Ihre Dokumente werden verschlüsselt übertragen (TLS 1.3) und auf deutschen Servern (Hetzner, Frankfurt)
+          gespeichert. Keine Daten werden für KI-Training verwendet.{" "}
+          <Link href="/trust" className="font-medium text-[#003856] hover:underline">
+            Mehr erfahren →
+          </Link>
+        </p>
+      </div>
+
       {rows.length > 0 && (
         <div className="mt-6 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
           <div className="flex items-center justify-between border-b border-[rgba(0,56,86,0.06)] px-6 py-4">

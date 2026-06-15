@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { LogoMark } from "@/components/Brand";
+import TrustBadges from "@/components/TrustBadges";
 
 const LINKS: [string, string][] = [
+  ["/trust", "Trust Center"],
   ["/sicherheit", "Sicherheit"],
   ["/compliance", "Compliance"],
   ["/avv", "AVV"],
@@ -33,13 +35,16 @@ export default function Footer() {
             ))}
           </nav>
         </div>
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-[rgba(0,56,86,0.08)] pt-6 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-[#64748b]">
-            © {new Date().getFullYear()} SBS Deutschland GmbH &amp; Co. KG
-          </p>
-          <p className="text-xs text-[#64748b]">
-            🇩🇪 Entwickelt und gehostet in Deutschland
-          </p>
+        <div className="mt-8 border-t border-[rgba(0,56,86,0.08)] pt-6">
+          <TrustBadges className="mb-5" />
+          <div className="flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+            <p className="text-xs text-[#64748b]">
+              © {new Date().getFullYear()} SBS Deutschland GmbH &amp; Co. KG
+            </p>
+            <p className="text-xs text-[#64748b]">
+              🇩🇪 Entwickelt und gehostet in Deutschland
+            </p>
+          </div>
         </div>
       </div>
     </footer>
