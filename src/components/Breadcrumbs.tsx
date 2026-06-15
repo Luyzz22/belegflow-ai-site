@@ -14,7 +14,9 @@ export const ROUTE_LABELS: Record<string, string> = {
   lieferanten: "Lieferanten",
   export: "DATEV-Export",
   zahlungen: "Zahlungen",
+  abgleich: "Abgleich",
   audit: "Audit-Trail",
+  aktivitaet: "Aktivität",
   analytics: "Analytics",
   prozesse: "Prozesse",
   cashflow: "Cash Flow",
@@ -22,6 +24,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   "compliance-center": "Compliance",
   report: "Wochenbericht",
   einstellungen: "Einstellungen",
+  entwickler: "Entwickler",
   hilfe: "Hilfe-Center",
   profil: "Profil",
 };

@@ -12,13 +12,16 @@ import {
   Building2,
   Landmark,
   CreditCard,
+  ArrowLeftRight,
   ScrollText,
+  Megaphone,
   BarChart3,
   Workflow,
   Droplets,
   Coins,
   ShieldCheck,
   Settings,
+  Terminal,
   HelpCircle,
   LogOut,
   Menu,
@@ -43,13 +46,16 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/lieferanten", label: "Lieferanten", icon: Building2 },
   { href: "/export", label: "DATEV-Export", icon: Landmark },
   { href: "/zahlungen", label: "Zahlungen", icon: CreditCard },
+  { href: "/abgleich", label: "Abgleich", icon: ArrowLeftRight },
   { href: "/audit", label: "Audit-Trail", icon: ScrollText },
+  { href: "/aktivitaet", label: "Aktivität", icon: Megaphone },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/prozesse", label: "Prozesse", icon: Workflow },
   { href: "/cashflow", label: "Cash Flow", icon: Droplets },
   { href: "/roi", label: "ROI", icon: Coins },
   { href: "/compliance-center", label: "Compliance", icon: ShieldCheck },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
+  { href: "/entwickler", label: "Entwickler", icon: Terminal },
   { href: "/hilfe", label: "Hilfe", icon: HelpCircle },
 ];
 
@@ -69,6 +75,7 @@ function SidebarPanel({
   pathname,
   user,
   reviewCount,
+  unreadActivity,
   onLogout,
   onNavigate,
   onToggleCollapse,
@@ -77,6 +84,7 @@ function SidebarPanel({
   pathname: string;
   user: { name?: string; email?: string; role?: string } | null;
   reviewCount: number;
+  unreadActivity: boolean;
   onLogout: () => void;
   onNavigate?: () => void;
   onToggleCollapse?: () => void;
@@ -131,6 +139,12 @@ function SidebarPanel({
                 >
                   {reviewCount}
                 </span>
+              )}
+              {item.href === "/aktivitaet" && unreadActivity && (
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full bg-red-500 ${collapsed ? "absolute right-1.5 top-1.5" : ""}`}
+                  aria-label="Ungelesene Aktivitäten"
+                />
               )}
             </Link>
           );
@@ -201,6 +215,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviewCount, setReviewCount] = useState(0);
+  const [unreadActivity, setUnreadActivity] = useState(false);
 
   // Badge: Anzahl der zur Prüfung offenen Rechnungen (Status "verarbeitet").
   useEffect(() => {
@@ -208,6 +223,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       .invoices("status=verarbeitet")
       .then((r) => setReviewCount((r.items || []).filter((i) => i.status === "verarbeitet").length))
       .catch(() => setReviewCount(0));
+  }, [pathname]);
+
+  // Roter Punkt: ungelesene Aktivitäten (neuestes Audit-Event > zuletzt gesehen).
+  useEffect(() => {
+    flowcheckApi
+      .audit("limit=1&offset=0")
+      .then((r) => {
+        const top = r.items?.[0]?.id;
+        if (top == null) return setUnreadActivity(false);
+        const seen = Number(localStorage.getItem("fc_activity_seen") || "0");
+        setUnreadActivity(top > seen);
+      })
+      .catch(() => setUnreadActivity(false));
   }, [pathname]);
 
   // Dynamischer Seitentitel.
@@ -233,6 +261,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           user={user}
           reviewCount={reviewCount}
+          unreadActivity={unreadActivity}
           onLogout={logout}
           onToggleCollapse={() => setCollapsed((v) => !v)}
         />
@@ -248,6 +277,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               pathname={pathname}
               user={user}
               reviewCount={reviewCount}
+          unreadActivity={unreadActivity}
               onLogout={logout}
               onNavigate={() => setMobileOpen(false)}
             />
