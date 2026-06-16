@@ -34,6 +34,9 @@ export default function LoginPage() {
 
       localStorage.setItem("flowcheck_token", token);
       if (data.user) localStorage.setItem("flowcheck_user", JSON.stringify(data.user));
+      const nowIso = new Date().toISOString();
+      localStorage.setItem("fc_last_login", nowIso);
+      localStorage.setItem("fc_last_check", String(Date.now()));
 
       // HARTER Redirect — frischer Page-Load, AuthProvider liest Token neu.
       window.location.href = "/dashboard";

@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Trash2, FileDown, Bot } from "lucide-react";
+import { Download, Trash2, FileDown, Bot, History, LogIn, Monitor } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
 import type { ConfidenceCheck, ConfidenceResult } from "@/lib/confidence";
+import { dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toggle from "@/components/Toggle";
 import { useToast } from "@/components/toast/ToastProvider";
+
+interface PrivacyEvent {
+  type: "export" | "deletion";
+  label: string;
+  at: string;
+}
 
 const CARD = "rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]";
 
@@ -48,14 +55,37 @@ function download(name: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+function loadLog(): PrivacyEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("fc_privacy_log") || "[]") as PrivacyEvent[];
+  } catch {
+    return [];
+  }
+}
+
 export default function DatenschutzCenterPage() {
   const { addToast } = useToast();
   const [kiOptOut, setKiOptOut] = useState(false);
+  const [log, setLog] = useState<PrivacyEvent[]>([]);
+  const [lastLogin, setLastLogin] = useState<string>("");
 
   useEffect(() => {
     const v = typeof window !== "undefined" && localStorage.getItem("fc_ki_optout") === "true";
-    Promise.resolve().then(() => setKiOptOut(v));
+    const ll = typeof window !== "undefined" ? localStorage.getItem("fc_last_login") || "" : "";
+    const l = loadLog();
+    Promise.resolve().then(() => {
+      setKiOptOut(v);
+      setLastLogin(ll);
+      setLog(l);
+    });
   }, []);
+
+  const pushLog = (type: PrivacyEvent["type"], label: string) => {
+    const next = [{ type, label, at: new Date().toISOString() }, ...loadLog()].slice(0, 20);
+    if (typeof window !== "undefined") localStorage.setItem("fc_privacy_log", JSON.stringify(next));
+    setLog(next);
+  };
 
   const score = Math.min(100, CHECKS.reduce((s, c) => s + c.earnedPoints, 0));
   const tier = score >= 90 ? "high" : score >= 70 ? "medium" : "low";
@@ -76,6 +106,7 @@ export default function DatenschutzCenterPage() {
       }
     }
     download("datenauskunft.json", JSON.stringify({ exportiert: new Date().toISOString(), daten: data }, null, 2), "application/json");
+    pushLog("export", "Datenauskunft (JSON)");
     addToast({ type: "success", text: "Datenauskunft exportiert (JSON). Vorgang protokolliert." });
   };
 
@@ -85,6 +116,7 @@ export default function DatenschutzCenterPage() {
       .then((r) => {
         const rows = ["Rechnungsnummer;Lieferant;Datum;Betrag;Status", ...(r.items || []).map((i) => `${i.rechnungsnummer};${i.lieferant};${i.datum};${(i.betrag || 0).toFixed(2)};${i.status}`)];
         download("rechnungen-export.csv", rows.join("\n"), "text/csv");
+        pushLog("export", "Rechnungen (CSV)");
         addToast({ type: "success", text: "Rechnungen exportiert (CSV)." });
       })
       .catch(() => addToast({ type: "error", text: "Export fehlgeschlagen." }));
@@ -92,6 +124,7 @@ export default function DatenschutzCenterPage() {
 
   const requestDeletion = () => {
     if (typeof window !== "undefined" && !window.confirm("Löschanfrage für alle personenbezogenen Daten stellen? Rechnungsdaten bleiben gesetzlich aufbewahrungspflichtig (anonymisiert).")) return;
+    pushLog("deletion", "Löschanfrage (alle personenbezogenen Daten)");
     addToast({ type: "success", text: "Löschanfrage übermittelt. Vorgang protokolliert (30-Tage-Frist)." });
   };
 
@@ -188,6 +221,64 @@ export default function DatenschutzCenterPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Zugriffsprotokolle */}
+      <div className={`${CARD} mt-6`}>
+        <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[#1a1a2e]">
+          <History className="h-5 w-5 text-[#003856]" /> Zugriffsprotokolle
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex items-center gap-3 rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <LogIn className="h-5 w-5 shrink-0 text-[#003856]" />
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-[#64748b]">Letzter Login</p>
+              <p className="text-sm font-semibold text-[#1a1a2e]">{lastLogin ? dateDE(lastLogin, true) : "—"}</p>
+              <p className="text-xs text-[#94a3b8]">IP wird clientseitig nicht erfasst</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-[rgba(0,56,86,0.08)] bg-[#faf9f7] p-4">
+            <Monitor className="h-5 w-5 shrink-0 text-[#003856]" />
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-[#64748b]">Aktive Sessions</p>
+              <p className="text-sm font-semibold text-[#1a1a2e]">1 (dieses Gerät)</p>
+              <p className="text-xs text-[#94a3b8]">Sitzung endet automatisch nach 8 Stunden</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-[#1a1a2e]">Letzte Datenexporte</h3>
+            {log.filter((e) => e.type === "export").length === 0 ? (
+              <p className="text-sm text-[#94a3b8]">Keine Exporte protokolliert.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {log.filter((e) => e.type === "export").map((e, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-[#64748b]">{e.label}</span>
+                    <span className="shrink-0 text-xs text-[#94a3b8]">{dateDE(e.at, true)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-[#1a1a2e]">Letzte Löschanfragen</h3>
+            {log.filter((e) => e.type === "deletion").length === 0 ? (
+              <p className="text-sm text-[#94a3b8]">Keine Löschanfragen protokolliert.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {log.filter((e) => e.type === "deletion").map((e, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-[#64748b]">{e.label}</span>
+                    <span className="shrink-0 text-xs text-[#94a3b8]">{dateDE(e.at, true)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

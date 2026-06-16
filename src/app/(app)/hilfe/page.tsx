@@ -8,6 +8,7 @@ import {
   Zap,
   Landmark,
   ShieldCheck,
+  Lock,
   HelpCircle,
   Mail,
   Search,
@@ -76,6 +77,22 @@ const SECTIONS: Section[] = [
       { p: "Unter Einstellungen → Allgemein legen Sie Betragsgrenzen fest:" },
       { list: ["Stufe 1 (Sachbearbeiter) bis Betrag X", "Stufe 2 (Teamleiter) bis Betrag Y", "Darüber: Geschäftsführung"] },
       { p: "Optional aktivieren Sie die automatische Freigabe für Kleinbeträge." },
+    ],
+  },
+  {
+    id: "sicherheit",
+    icon: Lock,
+    title: "Sicherheit",
+    body: [
+      { p: "FlowCheck AI+ verwendet ausschließlich aktuelle und geprüfte Open-Source-Bibliotheken. Regelmäßige Dependency-Audits (npm audit) werden durchgeführt und Sicherheitsupdates zeitnah eingespielt." },
+      { h: "Technische Schutzmaßnahmen", list: [
+        "Übertragung ausschließlich über TLS 1.3, Encryption at Rest (AES-256).",
+        "Strikte Security-Header inkl. Content-Security-Policy (CSP).",
+        "Eingabe-Sanitisierung und XSS-Schutz im Frontend.",
+        "Automatische Sitzungsbeendigung nach 8 Stunden.",
+        "Rate-Limiting und Fail2ban auf den Authentifizierungs-Endpoints.",
+      ] },
+      { p: "Den aktuellen Status der Security-Header können Sie jederzeit im Compliance-Center unter „Security-Headers Audit“ selbst überprüfen." },
     ],
   },
   {
