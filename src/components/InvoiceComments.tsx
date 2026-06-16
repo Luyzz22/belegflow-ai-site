@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Sparkles, Send, MessageSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { dateDE } from "@/lib/format";
@@ -20,14 +20,39 @@ function loadComments(id: number): Comment[] {
   }
 }
 
-// Minimales, sicheres Markdown (fett, kursiv, Listen, Zeilenumbrüche).
-function renderMarkdown(src: string): string {
-  const esc = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return esc
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^- (.+)$/gm, "• $1")
-    .replace(/\n/g, "<br/>");
+// Minimales Markdown (fett, kursiv) als React-Elemente — KEIN dangerouslySetInnerHTML.
+// React escaped Textknoten automatisch, daher XSS-sicher ohne manuelles Sanitizing.
+function renderInline(line: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(line)) !== null) {
+    if (m.index > last) nodes.push(line.slice(last, m.index));
+    if (m[1] !== undefined) nodes.push(<strong key={key++}>{m[1]}</strong>);
+    else nodes.push(<em key={key++}>{m[2]}</em>);
+    last = m.index + m[0].length;
+  }
+  if (last < line.length) nodes.push(line.slice(last));
+  return nodes;
+}
+
+function CommentBody({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((line, i) => {
+        const content = line.startsWith("- ") ? `• ${line.slice(2)}` : line;
+        return (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {renderInline(content)}
+          </Fragment>
+        );
+      })}
+    </>
+  );
 }
 
 export default function InvoiceComments({ invoiceId, summary }: { invoiceId: number; summary: string }) {
@@ -102,7 +127,7 @@ export default function InvoiceComments({ invoiceId, summary }: { invoiceId: num
                   <span className="text-sm font-semibold text-[#1a1a2e]">{c.author}</span>
                   <span className="text-xs text-[#94a3b8]">{dateDE(c.timestamp, true)}</span>
                 </div>
-                <p className="mt-0.5 text-sm leading-relaxed text-[#64748b]" dangerouslySetInnerHTML={{ __html: renderMarkdown(c.text) }} />
+                <p className="mt-0.5 text-sm leading-relaxed text-[#64748b]"><CommentBody text={c.text} /></p>
               </div>
             </li>
           ))}

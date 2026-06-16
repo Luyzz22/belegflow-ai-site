@@ -23,6 +23,7 @@ import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import { LoadingState, ErrorState } from "@/components/States";
 import { useToast } from "@/components/toast/ToastProvider";
+import SecurityHeadersAudit from "@/components/SecurityHeadersAudit";
 
 const CARD = "rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]";
 
@@ -423,6 +424,9 @@ export default function ComplianceCenterPage() {
           </div>
         )}
       </div>
+
+      {/* Security-Headers Audit */}
+      <SecurityHeadersAudit />
     </div>
   );
 }
