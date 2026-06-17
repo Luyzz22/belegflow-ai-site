@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Download, FileSpreadsheet, CheckCircle2, History } from "lucide-react";
-import { flowcheckApi, API_BASE, getToken, ApiError, type DatevBuchung, type AuditEntry } from "@/lib/api-client";
+import { flowcheckApi, API_BASE, getToken, ApiError, genericApiMessage, type DatevBuchung, type AuditEntry } from "@/lib/api-client";
 import { eur, dateDE } from "@/lib/format";
+import { recordExport } from "@/lib/exportLog";
 import PageHeader from "@/components/PageHeader";
 import { ErrorState, EmptyState, TableSkeleton, Spinner } from "@/components/States";
 
@@ -82,8 +83,8 @@ export default function ExportPage() {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-        throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
+        await res.text().catch(() => "");
+        throw new ApiError(genericApiMessage(res.status), res.status);
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -94,7 +95,8 @@ export default function ExportPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setMsg("Export erfolgreich heruntergeladen.");
+      recordExport("DATEV-CSV", buchungen.length);
+      setMsg("Export erfolgreich heruntergeladen. Vorgang wird GoBD-konform protokolliert.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Export fehlgeschlagen");
     } finally {

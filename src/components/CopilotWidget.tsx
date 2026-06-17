@@ -40,6 +40,15 @@ function answer(
   const { invoices, lieferanten, kpis } = data;
   const now = Date.now();
 
+  // Datensparsamkeit: Bankdaten werden grundsätzlich nicht im Chat ausgegeben.
+  if (/\biban\b|\bbic\b|bankverbindung|bankdaten|kontonummer/.test(s)) {
+    return {
+      role: "bot",
+      text: "Aus Datenschutzgründen werden Bankdaten nicht im Chat angezeigt. Sie finden die IBAN in den jeweiligen Rechnungsdetails.",
+      cta: { label: "Rechnung öffnen", href: "/rechnungen" },
+    };
+  }
+
   const monthKey = new Date(now).toISOString().slice(0, 7);
   const thisMonth = invoices.filter((i) => (i.datum || i.created_at || "").slice(0, 7) === monthKey);
 

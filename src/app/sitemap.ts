@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "", priority: 1, freq: "weekly" },
     { path: "/preise", priority: 0.9, freq: "monthly" },
     { path: "/trust", priority: 0.8, freq: "monthly" },
+    { path: "/status", priority: 0.5, freq: "daily" },
     { path: "/trust/tom", priority: 0.4, freq: "yearly" },
     { path: "/trust/avv", priority: 0.4, freq: "yearly" },
     { path: "/sicherheit", priority: 0.7, freq: "monthly" },

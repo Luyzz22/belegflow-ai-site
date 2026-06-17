@@ -55,6 +55,27 @@ export class ApiError extends Error {
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
 
+/** Generische, DSGVO-konforme Fehlermeldung je HTTP-Status.
+ *  Es werden NIE Backend-Details (DB-Fehler, Stack-Traces, Feldnamen) durchgereicht. */
+export function genericApiMessage(status: number): string {
+  switch (status) {
+    case 400:
+      return "Die Anfrage konnte nicht verarbeitet werden.";
+    case 401:
+      return "Bitte melden Sie sich erneut an.";
+    case 403:
+      return "Sie haben keine Berechtigung für diese Aktion.";
+    case 404:
+      return "Die angeforderte Ressource wurde nicht gefunden.";
+    case 429:
+      return "Zu viele Anfragen. Bitte warten Sie einen Moment.";
+    default:
+      return status >= 500
+        ? "Ein interner Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+        : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+  }
+}
+
 /** 401 → Session verwerfen und (außerhalb der Auth-Seiten) zum Login schicken. */
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
@@ -77,8 +98,9 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
-    const err = await res.json().catch(() => ({ detail: "Unbekannter Fehler" }));
-    throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
+    // Antwort-Body konsumieren, aber NICHT anzeigen — keine Daten-/Fehlerlecks.
+    await res.text().catch(() => "");
+    throw new ApiError(genericApiMessage(res.status), res.status);
   }
 
   // 204 / leere Antworten tolerieren

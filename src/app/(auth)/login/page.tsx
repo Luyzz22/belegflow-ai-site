@@ -26,7 +26,14 @@ export default function LoginPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.detail || "E-Mail oder Passwort falsch");
+        // Keine Backend-Details durchreichen (keine DB-/Stacktrace-Lecks).
+        throw new Error(
+          res.status === 401 || res.status === 400
+            ? "E-Mail oder Passwort falsch"
+            : res.status === 429
+              ? "Zu viele Anmeldeversuche. Bitte warten Sie einen Moment."
+              : "Anmeldung derzeit nicht möglich. Bitte versuchen Sie es erneut."
+        );
       }
 
       const token: string | undefined = data.token ?? data.access_token;

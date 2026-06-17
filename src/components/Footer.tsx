@@ -4,6 +4,7 @@ import TrustBadges from "@/components/TrustBadges";
 
 const LINKS: [string, string][] = [
   ["/trust", "Trust Center"],
+  ["/status", "Systemstatus"],
   ["/sicherheit", "Sicherheit"],
   ["/compliance", "Compliance"],
   ["/avv", "AVV"],

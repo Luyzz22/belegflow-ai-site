@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Calculator, Bell, Palette, Save, Link2, Copy, RefreshCw, Power, Archive, Download, Trash2 } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
+import { recordExport } from "@/lib/exportLog";
 import PageHeader from "@/components/PageHeader";
 import Toggle from "@/components/Toggle";
 import StammdatenPanel from "@/components/StammdatenPanel";
@@ -130,7 +131,8 @@ export default function EinstellungenPage() {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        addToast({ type: "success", text: "Datenexport erstellt (JSON)" });
+        recordExport("Vollständiger Datenexport (JSON)", (r.items || []).length);
+        addToast({ type: "success", text: "Datenexport erstellt (JSON). Export wird protokolliert (GoBD-konform)." });
       })
       .catch(() => addToast({ type: "error", text: "Export fehlgeschlagen" }));
   };

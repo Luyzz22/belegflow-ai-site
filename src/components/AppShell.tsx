@@ -38,6 +38,7 @@ import EntitySwitcher from "@/components/EntitySwitcher";
 import DemoBanner from "@/components/DemoBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import TrustBadges from "@/components/TrustBadges";
+import SessionSecurityBar from "@/components/SessionSecurityBar";
 
 interface NavItem {
   href: string;
@@ -365,7 +366,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <DemoBanner />
           <Breadcrumbs />
           {children}
-          <div className="mt-10 border-t border-[rgba(0,56,86,0.08)] pt-6 print:hidden">
+          <div className="mt-10 space-y-3 border-t border-[rgba(0,56,86,0.08)] pt-6 print:hidden">
+            <SessionSecurityBar />
             <TrustBadges />
           </div>
         </main>

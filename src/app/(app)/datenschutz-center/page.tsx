@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, Trash2, FileDown, Bot, History, LogIn, Monitor } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
 import type { ConfidenceCheck, ConfidenceResult } from "@/lib/confidence";
+import { recordExport, loadExports, type ExportEntry } from "@/lib/exportLog";
 import { dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import ConfidenceRing from "@/components/ConfidenceRing";
@@ -68,16 +69,19 @@ export default function DatenschutzCenterPage() {
   const { addToast } = useToast();
   const [kiOptOut, setKiOptOut] = useState(false);
   const [log, setLog] = useState<PrivacyEvent[]>([]);
+  const [exports, setExports] = useState<ExportEntry[]>([]);
   const [lastLogin, setLastLogin] = useState<string>("");
 
   useEffect(() => {
     const v = typeof window !== "undefined" && localStorage.getItem("fc_ki_optout") === "true";
     const ll = typeof window !== "undefined" ? localStorage.getItem("fc_last_login") || "" : "";
     const l = loadLog();
+    const ex = loadExports();
     Promise.resolve().then(() => {
       setKiOptOut(v);
       setLastLogin(ll);
       setLog(l);
+      setExports(ex);
     });
   }, []);
 
@@ -85,6 +89,12 @@ export default function DatenschutzCenterPage() {
     const next = [{ type, label, at: new Date().toISOString() }, ...loadLog()].slice(0, 20);
     if (typeof window !== "undefined") localStorage.setItem("fc_privacy_log", JSON.stringify(next));
     setLog(next);
+  };
+
+  const logExport = (type: string, count: number) => {
+    recordExport(type, count);
+    setExports(loadExports());
+    addToast({ type: "info", text: "Export wird protokolliert (GoBD-konform)." });
   };
 
   const score = Math.min(100, CHECKS.reduce((s, c) => s + c.earnedPoints, 0));
@@ -106,8 +116,8 @@ export default function DatenschutzCenterPage() {
       }
     }
     download("datenauskunft.json", JSON.stringify({ exportiert: new Date().toISOString(), daten: data }, null, 2), "application/json");
-    pushLog("export", "Datenauskunft (JSON)");
-    addToast({ type: "success", text: "Datenauskunft exportiert (JSON). Vorgang protokolliert." });
+    logExport("Datenauskunft (JSON)", Object.keys(data).length);
+    addToast({ type: "success", text: "Datenauskunft exportiert (JSON)." });
   };
 
   const exportRechnungen = () => {
@@ -116,7 +126,7 @@ export default function DatenschutzCenterPage() {
       .then((r) => {
         const rows = ["Rechnungsnummer;Lieferant;Datum;Betrag;Status", ...(r.items || []).map((i) => `${i.rechnungsnummer};${i.lieferant};${i.datum};${(i.betrag || 0).toFixed(2)};${i.status}`)];
         download("rechnungen-export.csv", rows.join("\n"), "text/csv");
-        pushLog("export", "Rechnungen (CSV)");
+        logExport("Rechnungen (CSV)", (r.items || []).length);
         addToast({ type: "success", text: "Rechnungen exportiert (CSV)." });
       })
       .catch(() => addToast({ type: "error", text: "Export fehlgeschlagen." }));
@@ -250,14 +260,16 @@ export default function DatenschutzCenterPage() {
         <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
             <h3 className="mb-2 text-sm font-semibold text-[#1a1a2e]">Letzte Datenexporte</h3>
-            {log.filter((e) => e.type === "export").length === 0 ? (
+            {exports.length === 0 ? (
               <p className="text-sm text-[#94a3b8]">Keine Exporte protokolliert.</p>
             ) : (
               <ul className="space-y-1.5">
-                {log.filter((e) => e.type === "export").map((e, i) => (
-                  <li key={i} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-[#64748b]">{e.label}</span>
-                    <span className="shrink-0 text-xs text-[#94a3b8]">{dateDE(e.at, true)}</span>
+                {exports.map((e) => (
+                  <li key={e.hash + e.timestamp} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="min-w-0 truncate text-[#64748b]" title={`Prüfsumme ${e.hash}`}>
+                      {e.type} · {e.count} {e.count === 1 ? "Eintrag" : "Einträge"}
+                    </span>
+                    <span className="shrink-0 text-xs text-[#94a3b8]">{dateDE(e.timestamp, true)}</span>
                   </li>
                 ))}
               </ul>
