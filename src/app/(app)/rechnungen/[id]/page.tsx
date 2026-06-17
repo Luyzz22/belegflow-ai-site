@@ -41,6 +41,7 @@ import {
 } from "@/lib/kontierungMemory";
 import { pushRecent } from "@/lib/recents";
 import StatusBadge from "@/components/StatusBadge";
+import PrintButton from "@/components/PrintButton";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toast from "@/components/Toast";
@@ -452,8 +453,9 @@ export default function InvoiceDetailPage() {
           <p className="mt-1.5 text-sm text-[#64748b]">
             {view.lieferant || "—"} · {dateDE(view.datum)}
           </p>
-          <div className="mt-3">
+          <div className="mt-3 flex items-center gap-3">
             <StatusBadge status={view.status} />
+            <PrintButton label="Als PDF" />
           </div>
         </div>
         <div className="shrink-0 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-3 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">

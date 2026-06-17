@@ -39,6 +39,8 @@ import DemoBanner from "@/components/DemoBanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import TrustBadges from "@/components/TrustBadges";
 import SessionSecurityBar from "@/components/SessionSecurityBar";
+import InstallPWA from "@/components/InstallPWA";
+import PrintFrame from "@/components/PrintFrame";
 
 interface NavItem {
   href: string;
@@ -254,6 +256,8 @@ function SidebarPanel({
           <ThemeToggle collapsed={collapsed} />
         </div>
 
+        <InstallPWA collapsed={collapsed} />
+
         {/* Collapse toggle (desktop) */}
         {onToggleCollapse && (
           <button
@@ -363,6 +367,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main id="hauptinhalt" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+          <PrintFrame />
           <DemoBanner />
           <Breadcrumbs />
           {children}

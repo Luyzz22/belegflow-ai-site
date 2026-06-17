@@ -9,6 +9,7 @@ import Toggle from "@/components/Toggle";
 import StammdatenPanel from "@/components/StammdatenPanel";
 import AutomationPanel from "@/components/AutomationPanel";
 import TemplatePanel from "@/components/TemplatePanel";
+import EmailNotificationsPanel from "@/components/EmailNotificationsPanel";
 import { useToast } from "@/components/toast/ToastProvider";
 
 type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung";
@@ -516,6 +517,9 @@ export default function EinstellungenPage() {
           </div>
           <SaveButton onClick={() => persist("Datenschutz")} />
         </section>
+
+        {/* E-Mail-Benachrichtigungen */}
+        <EmailNotificationsPanel />
       </div>
       )}
     </div>

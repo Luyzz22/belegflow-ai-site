@@ -87,7 +87,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ addToast, removeToast }}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[100] flex flex-col gap-2">
+      <div
+        aria-live="polite"
+        aria-atomic="false"
+        className="pointer-events-none fixed right-4 top-4 z-[100] flex flex-col gap-2"
+      >
         {items.map((item) => (
           <div key={item.id} className="pointer-events-auto">
             <ToastCard item={item} onClose={() => removeToast(item.id)} />
