@@ -17,8 +17,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi, ApiError } from "@/lib/api-client";
+import { isLimitReached, incrementUsage } from "@/lib/usage";
 import PageHeader from "@/components/PageHeader";
 import UploadCelebration from "@/components/UploadCelebration";
+import { useToast } from "@/components/toast/ToastProvider";
 
 type Status = "running" | "done" | "error";
 
@@ -49,6 +51,7 @@ function fileSize(bytes: number) {
 }
 
 export default function UploadPage() {
+  const { addToast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [celebrate, setCelebrate] = useState<string | null>(null);
@@ -100,6 +103,7 @@ export default function UploadPage() {
       const t1 = setTimeout(() => patch(id, (r) => ({ ...r, stepIndex: 4 })), 200);
       const t2 = setTimeout(() => {
         patch(id, (r) => ({ ...r, stepIndex: 5, status: "done" }));
+        incrementUsage();
         maybeCelebrate(file.name);
       }, 400);
       push(id, t1);
@@ -126,6 +130,10 @@ export default function UploadPage() {
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
+      if (isLimitReached()) {
+        addToast({ type: "error", text: "Monatliches Limit erreicht. Upgraden Sie Ihren Plan." });
+        return;
+      }
       const list = Array.from(files).slice(0, MAX_FILES);
       if (list.length === 0) return;
       const newRows: Row[] = list.map((file) => ({
@@ -137,7 +145,7 @@ export default function UploadPage() {
       setRows((prev) => [...prev, ...newRows].slice(0, MAX_FILES));
       newRows.forEach(runPipeline);
     },
-    [runPipeline]
+    [runPipeline, addToast]
   );
 
   const onDrop = useCallback(

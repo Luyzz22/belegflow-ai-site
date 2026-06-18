@@ -10,10 +10,12 @@ import StammdatenPanel from "@/components/StammdatenPanel";
 import AutomationPanel from "@/components/AutomationPanel";
 import TemplatePanel from "@/components/TemplatePanel";
 import EmailNotificationsPanel from "@/components/EmailNotificationsPanel";
+import SubscriptionPanel from "@/components/SubscriptionPanel";
+import ReferralPanel from "@/components/ReferralPanel";
 import HelpTooltip from "@/components/HelpTooltip";
 import { useToast } from "@/components/toast/ToastProvider";
 
-type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung";
+type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung" | "abo" | "weiterempfehlen";
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "allgemein", label: "Allgemein" },
@@ -23,6 +25,8 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "kostenstellen", label: "Kostenstellen" },
   { value: "lieferanten", label: "Lieferanten-Stammdaten" },
   { value: "aufbewahrung", label: "Aufbewahrung" },
+  { value: "abo", label: "Abonnement" },
+  { value: "weiterempfehlen", label: "Weiterempfehlen" },
 ];
 
 const RETENTION = [
@@ -206,6 +210,8 @@ export default function EinstellungenPage() {
 
       {tab === "automatisierung" && <AutomationPanel />}
       {tab === "vorlagen" && <TemplatePanel />}
+      {tab === "abo" && <SubscriptionPanel />}
+      {tab === "weiterempfehlen" && <ReferralPanel />}
 
       {tab === "aufbewahrung" && (
         <div className="space-y-6">

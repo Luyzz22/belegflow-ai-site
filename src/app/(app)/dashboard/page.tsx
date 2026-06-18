@@ -62,6 +62,7 @@ function readKpiCache(): DashboardKpis | null {
 import { eur, num, dateDE } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
+import UsageMeter from "@/components/UsageMeter";
 import StatusBadge from "@/components/StatusBadge";
 import CountUp from "@/components/CountUp";
 import { ErrorState, EmptyState, CardSkeleton, Skeleton } from "@/components/States";
@@ -452,6 +453,8 @@ export default function DashboardPage() {
   return (
     <div className="fc-fade-in">
       {header}
+
+      <UsageMeter />
 
       {/* Quick-Action-Cards */}
       {quickActions.length > 0 && (

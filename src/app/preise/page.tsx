@@ -5,7 +5,7 @@ import PublicPage from "@/components/PublicPage";
 export const metadata: Metadata = {
   title: "Preise",
   description:
-    "FlowCheck AI+ Preise: Starter €99, Professional €349, Business €999 pro Monat. Transparent, ohne Setup-Kosten, 30 Tage kostenlos testen.",
+    "FlowCheck AI+ Preise: Starter €99, Professional €349, Enterprise €999 pro Monat. Transparent, ohne Setup-Kosten, 14 Tage kostenlos testen.",
 };
 
 const PLANS = [
@@ -15,13 +15,14 @@ const PLANS = [
     sub: "pro Monat",
     desc: "Für kleine Teams, die den Rechnungseingang digitalisieren.",
     features: [
-      "Bis 250 Rechnungen / Monat",
+      "Bis 100 Rechnungen / Monat",
       "KI-Extraktion & §14 UStG-Prüfung",
       "DATEV-CSV-Export",
       "1 Benutzer",
       "E-Mail-Support",
     ],
     featured: false,
+    contact: false,
   },
   {
     tier: "Professional",
@@ -29,7 +30,7 @@ const PLANS = [
     sub: "pro Monat",
     desc: "Für wachsende Unternehmen mit Freigabeprozessen.",
     features: [
-      "Bis 1.500 Rechnungen / Monat",
+      "Bis 500 Rechnungen / Monat",
       "Mehrstufige Freigaben",
       "Anomalie-Detection",
       "Lieferanten-Risiko-Score",
@@ -37,9 +38,10 @@ const PLANS = [
       "Priorisierter Support",
     ],
     featured: true,
+    contact: false,
   },
   {
-    tier: "Business",
+    tier: "Enterprise",
     price: "€999",
     sub: "pro Monat",
     desc: "Für den Mittelstand mit Compliance-Anforderungen.",
@@ -52,11 +54,12 @@ const PLANS = [
       "Dedicated Customer Success",
     ],
     featured: false,
+    contact: true,
   },
 ];
 
 const FAQ: [string, string][] = [
-  ["Gibt es eine kostenlose Testphase?", "Ja, alle Pläne können 30 Tage kostenlos und ohne Kreditkarte getestet werden."],
+  ["Gibt es eine kostenlose Testphase?", "Ja, alle Pläne können 14 Tage kostenlos und ohne Kreditkarte getestet werden."],
   ["Kann ich den Plan monatlich wechseln?", "Ja, Up- und Downgrades sind jederzeit zum nächsten Abrechnungszeitraum möglich."],
   ["Wo werden meine Daten gespeichert?", "Ausschließlich in deutschen Rechenzentren (Hetzner, DE) — DSGVO- und GoBD-konform."],
   ["Ist ein DATEV-Export enthalten?", "Ja, in jedem Plan. Business unterstützt zusätzlich erweiterte Buchungslogiken."],
@@ -66,7 +69,7 @@ export default function PreisePage() {
   return (
     <PublicPage
       title="Preise"
-      subtitle="Transparente Pläne ohne Setup-Kosten. 30 Tage kostenlos testen."
+      subtitle="Transparente Pläne ohne Setup-Kosten. 14 Tage kostenlos testen."
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {PLANS.map((p) => (
@@ -95,16 +98,25 @@ export default function PreisePage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/register"
-              className={`mt-7 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition ${
-                p.featured
-                  ? "bg-[#003856] text-white hover:bg-[#002a42]"
-                  : "bg-stone-50 text-[#003856] ring-1 ring-stone-200 hover:bg-stone-100"
-              }`}
-            >
-              30 Tage kostenlos testen
-            </Link>
+            {p.contact ? (
+              <a
+                href="mailto:ki@sbsdeutschland.de"
+                className="mt-7 rounded-xl bg-stone-50 px-4 py-2.5 text-center text-sm font-medium text-[#003856] ring-1 ring-stone-200 transition hover:bg-stone-100"
+              >
+                Kontakt aufnehmen
+              </a>
+            ) : (
+              <Link
+                href="/register"
+                className={`mt-7 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition ${
+                  p.featured
+                    ? "bg-[#003856] text-white hover:bg-[#002a42]"
+                    : "bg-stone-50 text-[#003856] ring-1 ring-stone-200 hover:bg-stone-100"
+                }`}
+              >
+                14 Tage kostenlos testen
+              </Link>
+            )}
           </div>
         ))}
       </div>

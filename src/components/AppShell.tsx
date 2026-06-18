@@ -43,6 +43,8 @@ import TrustBadges from "@/components/TrustBadges";
 import SessionSecurityBar from "@/components/SessionSecurityBar";
 import InstallPWA from "@/components/InstallPWA";
 import PrintFrame from "@/components/PrintFrame";
+import ChangelogButton from "@/components/ChangelogButton";
+import TrialBanner from "@/components/TrialBanner";
 
 interface NavItem {
   href: string;
@@ -126,9 +128,14 @@ function SidebarPanel({
       <div className={`flex h-16 items-center gap-2.5 ${collapsed ? "justify-center px-0" : "px-5"}`}>
         <LogoMark className="h-8 w-8 shrink-0 ring-1 ring-white/15" />
         {!collapsed && (
-          <span className="text-base font-semibold tracking-tight">
-            FlowCheck <span className="text-[#c8985a]">AI+</span>
-          </span>
+          <>
+            <span className="text-base font-semibold tracking-tight">
+              FlowCheck <span className="text-[#c8985a]">AI+</span>
+            </span>
+            <span className="ml-auto">
+              <ChangelogButton />
+            </span>
+          </>
         )}
       </div>
 
@@ -425,6 +432,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <main id="hauptinhalt" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
           <PrintFrame />
           <DemoBanner />
+          <TrialBanner />
           <Breadcrumbs />
           <div key={pathname}>{children}</div>
           <div className="mt-10 space-y-3 border-t border-[rgba(0,56,86,0.08)] pt-6 print:hidden">

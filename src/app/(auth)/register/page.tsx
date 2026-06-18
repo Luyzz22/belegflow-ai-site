@@ -26,6 +26,10 @@ export default function RegisterPage() {
     try {
       const res = await flowcheckApi.register(email, password, name);
       setSession(res.token, res.user);
+      const now = Date.now();
+      localStorage.setItem("fc_trial_start", String(now));
+      localStorage.setItem("fc_last_login", new Date(now).toISOString());
+      localStorage.setItem("fc_last_check", String(now));
       window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrierung fehlgeschlagen");
