@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { flowcheckApi, ApiError } from "@/lib/api-client";
 import PageHeader from "@/components/PageHeader";
+import UploadCelebration from "@/components/UploadCelebration";
 
 type Status = "running" | "done" | "error";
 
@@ -50,8 +51,17 @@ function fileSize(bytes: number) {
 export default function UploadPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [celebrate, setCelebrate] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>[]>>({});
+
+  // Zeigt nach dem allerersten erfolgreichen Upload ein Erfolgs-Modal.
+  const maybeCelebrate = useCallback((name: string) => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("fc_first_upload")) return;
+    localStorage.setItem("fc_first_upload", "true");
+    setCelebrate(name);
+  }, []);
 
   const clearTimers = useCallback((id?: string) => {
     if (id) {
@@ -88,7 +98,10 @@ export default function UploadPage() {
 
     const finish = () => {
       const t1 = setTimeout(() => patch(id, (r) => ({ ...r, stepIndex: 4 })), 200);
-      const t2 = setTimeout(() => patch(id, (r) => ({ ...r, stepIndex: 5, status: "done" })), 400);
+      const t2 = setTimeout(() => {
+        patch(id, (r) => ({ ...r, stepIndex: 5, status: "done" }));
+        maybeCelebrate(file.name);
+      }, 400);
       push(id, t1);
       push(id, t2);
     };
@@ -109,7 +122,7 @@ export default function UploadPage() {
         }
       })
       .catch((e) => fail(e instanceof ApiError ? e.message : "Upload fehlgeschlagen"));
-  }, [clearTimers]);
+  }, [clearTimers, maybeCelebrate]);
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -319,6 +332,8 @@ export default function UploadPage() {
           )}
         </div>
       )}
+
+      {celebrate && <UploadCelebration fileName={celebrate} onClose={() => setCelebrate(null)} />}
     </div>
   );
 }

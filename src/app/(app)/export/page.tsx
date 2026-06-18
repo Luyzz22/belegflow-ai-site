@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Download, FileSpreadsheet, CheckCircle2, History } from "lucide-react";
 import { flowcheckApi, API_BASE, getToken, ApiError, genericApiMessage, type DatevBuchung, type AuditEntry } from "@/lib/api-client";
 import { eur, dateDE } from "@/lib/format";
@@ -114,6 +115,7 @@ export default function ExportPage() {
     <div className="fc-fade-in">
       <PageHeader
         title="DATEV-Export"
+        help="Exportiert freigegebene Rechnungen als EXTF-700-Buchungsstapel für DATEV Unternehmen Online."
         description="Buchungssätze prüfen und als DATEV-CSV exportieren"
         action={
           <button
@@ -141,8 +143,16 @@ export default function ExportPage() {
       ) : buchungen.length === 0 ? (
         <EmptyState
           icon={<FileSpreadsheet className="h-6 w-6" />}
-          title="Keine exportbereiten Buchungen"
-          description="Sobald Rechnungen freigegeben sind, erscheinen sie hier als DATEV-Buchungssätze."
+          title="Keine exportierbaren Buchungen"
+          description="Laden Sie Rechnungen hoch und geben Sie sie frei — danach erscheinen sie hier als DATEV-Buchungssätze."
+          action={
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+            >
+              Rechnung hochladen →
+            </Link>
+          }
         />
       ) : (
         <>

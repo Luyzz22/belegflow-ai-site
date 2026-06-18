@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ResponsiveContainer,
@@ -204,7 +205,18 @@ export default function AnalyticsPage() {
     return (
       <div className="fc-fade-in">
         <PageHeader title="Analytics" description="Spend Analytics für Finance-Teams" />
-        <EmptyState title="Noch keine Auswertungsdaten" description="Sobald Rechnungen vorliegen, erscheinen hier Auswertungen." />
+        <EmptyState
+          title="Noch nicht genügend Daten für Analysen"
+          description="Nach einigen verarbeiteten Rechnungen erscheinen hier Ihre Insights."
+          action={
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+            >
+              Rechnungen hochladen →
+            </Link>
+          }
+        />
       </div>
     );
   }

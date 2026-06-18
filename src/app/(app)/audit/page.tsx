@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Download,
   ScrollText,
@@ -235,8 +236,16 @@ export default function AuditPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<ScrollText className="h-6 w-6" />}
-          title="Noch keine Ereignisse."
-          description="Für die gewählten Filter gibt es keine Protokolleinträge."
+          title="Noch keine Aktivitäten"
+          description="Alle Aktionen werden hier automatisch protokolliert — sobald Sie mit Rechnungen arbeiten."
+          action={
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+            >
+              Erste Rechnung hochladen →
+            </Link>
+          }
         />
       ) : (
         <div className="relative pl-4">

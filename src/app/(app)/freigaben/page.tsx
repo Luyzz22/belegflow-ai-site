@@ -178,8 +178,16 @@ export default function FreigabenPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CheckCircle2 className="h-6 w-6" />}
-          title="Alle Rechnungen wurden geprüft ✅"
-          description="Es liegen aktuell keine offenen Freigaben vor."
+          title="Keine ausstehenden Freigaben"
+          description="Alle Rechnungen wurden bearbeitet. Laden Sie neue Rechnungen hoch."
+          action={
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+            >
+              Rechnung hochladen →
+            </Link>
+          }
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

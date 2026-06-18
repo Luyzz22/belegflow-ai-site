@@ -327,6 +327,22 @@ export default function DashboardPage() {
     <PageHeader
       title={`${greeting()}${firstName ? `, ${firstName}` : ""}`}
       description="Überblick über Ihre Rechnungsverarbeitung"
+      action={
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/upload"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+          >
+            Rechnungen hochladen
+          </Link>
+          <Link
+            href="/review"
+            className="inline-flex items-center gap-2 rounded-xl border border-[rgba(0,56,86,0.12)] px-5 py-2.5 text-sm font-medium text-[#003856] transition hover:bg-[#faf9f7] active:scale-95"
+          >
+            Review starten
+          </Link>
+        </div>
+      }
     />
   );
 

@@ -10,6 +10,7 @@ import StammdatenPanel from "@/components/StammdatenPanel";
 import AutomationPanel from "@/components/AutomationPanel";
 import TemplatePanel from "@/components/TemplatePanel";
 import EmailNotificationsPanel from "@/components/EmailNotificationsPanel";
+import HelpTooltip from "@/components/HelpTooltip";
 import { useToast } from "@/components/toast/ToastProvider";
 
 type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung";
@@ -46,13 +47,16 @@ const INPUT =
   "w-full rounded-xl border border-[rgba(0,56,86,0.12)] px-4 py-2.5 text-sm outline-none transition focus:border-[#003856] focus:ring-2 focus:ring-[#003856]/20";
 const LABEL = "mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#64748b]";
 
-function SectionHeader({ icon: Icon, title }: { icon: typeof ShieldCheck; title: string }) {
+function SectionHeader({ icon: Icon, title, help }: { icon: typeof ShieldCheck; title: string; help?: string }) {
   return (
     <div className="mb-4 flex items-center gap-2.5">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
         <Icon className="h-5 w-5" />
       </span>
-      <h2 className="text-xl font-semibold text-[#1a1a2e]">{title}</h2>
+      <h2 className="flex items-center gap-1.5 text-xl font-semibold text-[#1a1a2e]">
+        {title}
+        {help && <HelpTooltip text={help} />}
+      </h2>
     </div>
   );
 }
@@ -323,7 +327,7 @@ export default function EinstellungenPage() {
 
         {/* Kontierung */}
         <section className={CARD}>
-          <SectionHeader icon={Calculator} title="Kontierung" />
+          <SectionHeader icon={Calculator} title="Kontierung" help="Die Kontierung ordnet die Rechnung den passenden Buchungskonten zu (SKR03/SKR04)." />
           <div className="space-y-4">
             <div>
               <label className={LABEL}>Standard-Konto</label>

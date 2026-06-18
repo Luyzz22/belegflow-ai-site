@@ -122,8 +122,22 @@ export default function LieferantenPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<Building2 className="h-6 w-6" />}
-          title={q ? "Keine Treffer" : "Noch keine Lieferanten erfasst."}
-          description={q ? "Keine Lieferanten passen zu Ihrer Suche." : undefined}
+          title={q ? "Keine Treffer" : "Noch keine Lieferanten"}
+          description={
+            q
+              ? "Keine Lieferanten passen zu Ihrer Suche."
+              : "Lieferanten werden automatisch erkannt, wenn Sie Rechnungen hochladen."
+          }
+          action={
+            q ? undefined : (
+              <Link
+                href="/upload"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+              >
+                Erste Rechnung hochladen →
+              </Link>
+            )
+          }
         />
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -28,6 +28,7 @@ import { computeConfidence, confidenceSummary } from "@/lib/confidence";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Confetti from "@/components/Confetti";
+import HelpTooltip from "@/components/HelpTooltip";
 import { useToast } from "@/components/toast/ToastProvider";
 import { LoadingState, EmptyState } from "@/components/States";
 
@@ -325,6 +326,7 @@ export default function ReviewPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#ffb900]" />
             Review-Modus
           </span>
+          <HelpTooltip text="Im Review-Modus prüfen und geben Sie Rechnungen einzeln frei — mit Tastenkürzeln in Sekunden." />
           <span className="text-sm text-[#64748b]">
             {progress + 1} von {items.length} Rechnungen
           </span>

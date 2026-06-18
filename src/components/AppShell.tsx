@@ -31,6 +31,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
+import { getPaidSet } from "@/lib/payments";
+import { zahlungszielFor } from "@/lib/stammdaten";
 import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Brand";
 import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
@@ -98,6 +100,8 @@ function SidebarPanel({
   user,
   reviewCount,
   unreadActivity,
+  exportCount,
+  overdueCount,
   onLogout,
   onNavigate,
   onToggleCollapse,
@@ -107,6 +111,8 @@ function SidebarPanel({
   user: { name?: string; email?: string; role?: string } | null;
   reviewCount: number;
   unreadActivity: boolean;
+  exportCount: number;
+  overdueCount: number;
   onLogout: () => void;
   onNavigate?: () => void;
   onToggleCollapse?: () => void;
@@ -209,6 +215,26 @@ function SidebarPanel({
                   aria-label="Ungelesene Aktivitäten"
                 />
               )}
+              {item.href === "/export" && exportCount > 0 && (
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8985a] px-1.5 text-[11px] font-bold text-white ${
+                    collapsed ? "absolute right-1 top-1" : ""
+                  }`}
+                  aria-label={`${exportCount} freigegebene Rechnungen exportbereit`}
+                >
+                  {exportCount}
+                </span>
+              )}
+              {item.href === "/zahlungen" && overdueCount > 0 && (
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white ${
+                    collapsed ? "absolute right-1 top-1" : ""
+                  }`}
+                  aria-label={`${overdueCount} überfällige Zahlungen`}
+                >
+                  {overdueCount}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -281,6 +307,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviewCount, setReviewCount] = useState(0);
   const [unreadActivity, setUnreadActivity] = useState(false);
+  const [exportCount, setExportCount] = useState(0);
+  const [overdueCount, setOverdueCount] = useState(0);
 
   // Badge: Anzahl der zur Prüfung offenen Rechnungen (Status "verarbeitet").
   useEffect(() => {
@@ -288,6 +316,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       .invoices("status=verarbeitet")
       .then((r) => setReviewCount((r.items || []).filter((i) => i.status === "verarbeitet").length))
       .catch(() => setReviewCount(0));
+  }, [pathname]);
+
+  // Badges: freigegebene (noch nicht exportierte) Rechnungen + überfällige Zahlungen.
+  useEffect(() => {
+    flowcheckApi
+      .invoices("limit=500&offset=0")
+      .then((r) => {
+        const items = r.items || [];
+        const now = Date.now();
+        const paid = getPaidSet();
+        setExportCount(items.filter((i) => i.status === "freigegeben").length);
+        setOverdueCount(
+          items.filter((i) => {
+            if (paid.has(i.id) || i.status === "exportiert") return false;
+            const base = Date.parse(i.datum || i.created_at || "");
+            if (!Number.isFinite(base)) return false;
+            return base + zahlungszielFor(i.lieferant) * 86_400_000 < now;
+          }).length
+        );
+      })
+      .catch(() => {
+        setExportCount(0);
+        setOverdueCount(0);
+      });
   }, [pathname]);
 
   // Roter Punkt: ungelesene Aktivitäten (neuestes Audit-Event > zuletzt gesehen).
@@ -327,6 +379,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           user={user}
           reviewCount={reviewCount}
           unreadActivity={unreadActivity}
+          exportCount={exportCount}
+          overdueCount={overdueCount}
           onLogout={logout}
           onToggleCollapse={() => setCollapsed((v) => !v)}
         />
@@ -342,7 +396,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               pathname={pathname}
               user={user}
               reviewCount={reviewCount}
-          unreadActivity={unreadActivity}
+              unreadActivity={unreadActivity}
+              exportCount={exportCount}
+              overdueCount={overdueCount}
               onLogout={logout}
               onNavigate={() => setMobileOpen(false)}
             />
@@ -370,7 +426,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <PrintFrame />
           <DemoBanner />
           <Breadcrumbs />
-          {children}
+          <div key={pathname}>{children}</div>
           <div className="mt-10 space-y-3 border-t border-[rgba(0,56,86,0.08)] pt-6 print:hidden">
             <SessionSecurityBar />
             <TrustBadges />

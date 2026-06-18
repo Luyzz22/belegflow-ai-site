@@ -42,6 +42,7 @@ import {
 import { pushRecent } from "@/lib/recents";
 import StatusBadge from "@/components/StatusBadge";
 import PrintButton from "@/components/PrintButton";
+import HelpTooltip from "@/components/HelpTooltip";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ConfidenceBreakdown from "@/components/ConfidenceBreakdown";
 import Toast from "@/components/Toast";
@@ -473,6 +474,7 @@ export default function InvoiceDetailPage() {
           <div className="flex items-center gap-2 text-amber-800">
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <p className="font-semibold">Mögliches Duplikat erkannt</p>
+            <HelpTooltip text="FlowCheck erkennt ungewöhnliche Beträge, Duplikate und auffällige Muster automatisch." />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="rounded-xl bg-white/70 p-3">

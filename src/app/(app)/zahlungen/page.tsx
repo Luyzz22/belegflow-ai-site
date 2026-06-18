@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Download, CreditCard, Check } from "lucide-react";
 import { flowcheckApi, ApiError, type InvoiceListItem } from "@/lib/api-client";
 import { eur, dateDE } from "@/lib/format";
@@ -212,7 +213,19 @@ export default function ZahlungenPage() {
           <h2 className="mb-1 text-xl font-semibold text-[#1a1a2e]">Empfohlene Zahlungen</h2>
           <p className="mb-4 text-xs text-[#64748b]">Überfällige und in den nächsten 7 Tagen fällige Rechnungen.</p>
           {proposal.length === 0 ? (
-            <EmptyState icon={<CreditCard className="h-6 w-6" />} title="Keine fälligen Zahlungen" />
+            <EmptyState
+              icon={<CreditCard className="h-6 w-6" />}
+              title="Keine fälligen Zahlungen"
+              description="Fälligkeiten werden automatisch aus Ihren Rechnungen berechnet."
+              action={
+                <Link
+                  href="/rechnungen"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+                >
+                  Zu den Rechnungen →
+                </Link>
+              }
+            />
           ) : (
             <>
               <ul className="divide-y divide-[rgba(0,56,86,0.06)]">

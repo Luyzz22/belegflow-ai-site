@@ -183,7 +183,19 @@ export default function AktivitaetPage() {
       ) : error ? (
         <ErrorState message={error} onRetry={retry} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<ActivityIcon className="h-6 w-6" />} title="Noch keine Aktivitäten" />
+        <EmptyState
+          icon={<ActivityIcon className="h-6 w-6" />}
+          title="Noch keine Aktivitäten"
+          description="Laden Sie Ihre erste Rechnung hoch — alle Ereignisse erscheinen dann hier."
+          action={
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#003856] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#002a42] active:scale-95"
+            >
+              Rechnung hochladen →
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-6">
           {groups.map((g) => (
