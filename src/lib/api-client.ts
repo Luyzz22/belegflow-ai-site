@@ -43,8 +43,7 @@ export function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
-/** Fehler mit HTTP-Status, damit UIs gezielt auf 401/403/404 reagieren können. */
-export class ApiError extends Error {
+/** Fehler mit HTTP-Status, damit UIs gezielt auf 401/403/404 reagieren können. */export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);
@@ -252,6 +251,22 @@ export interface UploadResult {
   detail?: string;
 }
 
+export type WebhookEvent = "invoice.processed" | "invoice.approved" | "invoice.rejected" | "export.completed";
+
+export interface Webhook {
+  id: string | number;
+  url: string;
+  events: WebhookEvent[];
+  active?: boolean;
+  created_at?: string;
+}
+
+export interface WebhookInput {
+  url: string;
+  secret?: string;
+  events: WebhookEvent[];
+}
+
 /** Ein DATEV-Buchungssatz aus /datev/preview. Felder je nach Backend optional;
  *  zusätzliche Spalten werden generisch unterstützt. */
 export interface DatevBuchung {
@@ -368,4 +383,14 @@ export const flowcheckApi = {
     return api<AuditList>(`/audit${params ? `?${params}` : ""}`);
   },
   auditCsvUrl: () => `${API_BASE}/audit/export.csv`,
+
+  // Webhooks (n8n-Integration)
+  webhooks: (): Promise<{ items: Webhook[] }> =>
+    isDemo() ? Promise.resolve({ items: [] }) : api<{ items: Webhook[] }>("/webhooks"),
+  createWebhook: (payload: WebhookInput): Promise<Webhook> =>
+    api<Webhook>("/webhooks", { method: "POST", body: JSON.stringify(payload) }),
+  deleteWebhook: (id: string | number): Promise<{ ok: boolean }> =>
+    api<{ ok: boolean }>(`/webhooks/${id}`, { method: "DELETE" }),
+  testWebhook: (url: string): Promise<{ ok: boolean }> =>
+    api<{ ok: boolean }>("/webhooks/test", { method: "POST", body: JSON.stringify({ url }) }),
 };

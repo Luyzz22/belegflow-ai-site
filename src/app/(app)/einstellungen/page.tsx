@@ -12,10 +12,11 @@ import TemplatePanel from "@/components/TemplatePanel";
 import EmailNotificationsPanel from "@/components/EmailNotificationsPanel";
 import SubscriptionPanel from "@/components/SubscriptionPanel";
 import ReferralPanel from "@/components/ReferralPanel";
+import WebhooksPanel from "@/components/WebhooksPanel";
 import HelpTooltip from "@/components/HelpTooltip";
 import { useToast } from "@/components/toast/ToastProvider";
 
-type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung" | "abo" | "weiterempfehlen";
+type SettingsTab = "allgemein" | "konten" | "kostenstellen" | "lieferanten" | "automatisierung" | "vorlagen" | "aufbewahrung" | "abo" | "weiterempfehlen" | "webhooks";
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "allgemein", label: "Allgemein" },
@@ -25,6 +26,7 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "kostenstellen", label: "Kostenstellen" },
   { value: "lieferanten", label: "Lieferanten-Stammdaten" },
   { value: "aufbewahrung", label: "Aufbewahrung" },
+  { value: "webhooks", label: "Webhooks & n8n" },
   { value: "abo", label: "Abonnement" },
   { value: "weiterempfehlen", label: "Weiterempfehlen" },
 ];
@@ -212,6 +214,7 @@ export default function EinstellungenPage() {
       {tab === "vorlagen" && <TemplatePanel />}
       {tab === "abo" && <SubscriptionPanel />}
       {tab === "weiterempfehlen" && <ReferralPanel />}
+      {tab === "webhooks" && <WebhooksPanel />}
 
       {tab === "aufbewahrung" && (
         <div className="space-y-6">
