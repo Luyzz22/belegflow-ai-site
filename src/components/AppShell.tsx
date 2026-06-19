@@ -34,6 +34,7 @@ import { flowcheckApi } from "@/lib/api-client";
 import { getPaidSet } from "@/lib/payments";
 import { zahlungszielFor } from "@/lib/stammdaten";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 import { LogoMark } from "@/components/Brand";
 import Breadcrumbs, { ROUTE_LABELS } from "@/components/Breadcrumbs";
 import EntitySwitcher from "@/components/EntitySwitcher";
@@ -121,6 +122,8 @@ function SidebarPanel({
 }) {
   const initial = (user?.name || user?.email || "?").slice(0, 1).toUpperCase();
   const [openGroup, setOpenGroup] = useState("");
+  const { t } = useTranslation();
+  const navLabel = (item: NavItem) => t(`nav.${item.href.slice(1)}`);
 
   return (
     <div className="flex h-full flex-col bg-[#003856] text-white">
@@ -165,7 +168,7 @@ function SidebarPanel({
                   }`}
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left">{navLabel(item)}</span>
                   <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                 </button>
                 {isOpen && (
@@ -206,7 +209,7 @@ function SidebarPanel({
                 <span className="fc-indicator absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#c8985a]" />
               )}
               <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              {!collapsed && <span className="flex-1">{item.label}</span>}
+              {!collapsed && <span className="flex-1">{navLabel(item)}</span>}
               {item.href === "/review" && reviewCount > 0 && (
                 <span
                   className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ffb900] px-1.5 text-[11px] font-bold text-[#003856] ${

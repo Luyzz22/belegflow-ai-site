@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LogoMark } from "@/components/Brand";
 import TrustBadges from "@/components/TrustBadges";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const LINKS: [string, string][] = [
   ["/trust", "Trust Center"],
@@ -42,9 +43,10 @@ export default function Footer() {
             <p className="text-xs text-[#64748b]">
               © {new Date().getFullYear()} SBS Deutschland GmbH &amp; Co. KG
             </p>
-            <p className="text-xs text-[#64748b]">
-              🇩🇪 Entwickelt und gehostet in Deutschland
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-xs text-[#64748b]">🇩🇪 Entwickelt und gehostet in Deutschland</p>
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </div>

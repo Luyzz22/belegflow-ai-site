@@ -61,6 +61,7 @@ function readKpiCache(): DashboardKpis | null {
 }
 import { eur, num, dateDE } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 import PageHeader from "@/components/PageHeader";
 import UsageMeter from "@/components/UsageMeter";
 import StatusBadge from "@/components/StatusBadge";
@@ -184,6 +185,7 @@ function KpiCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [kpis, setKpis] = useState<DashboardKpis | null>(() => readKpiCache());
   const [invoices, setInvoices] = useState<InvoiceListItem[] | null>(null);
@@ -536,7 +538,7 @@ export default function DashboardPage() {
       {/* KPI row */}
       <div data-tour="kpis" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <KpiCard
-          label="Rechnungen diesen Monat"
+          label={t("kpi.invoicesThisMonth")}
           value={<CountUp value={kpis?.rechnungen_monat ?? 0} />}
           icon={FileText}
           trend={(kpis?.rechnungen_heute ?? 0) > 0 ? `+${num(kpis?.rechnungen_heute ?? 0)} heute` : undefined}
@@ -564,7 +566,7 @@ export default function DashboardPage() {
           }
         />
         <KpiCard
-          label="Automatisierungsquote"
+          label={t("kpi.automationRate")}
           value={
             <CountUp
               value={kpis?.automatisierungsquote ?? 0}
@@ -575,7 +577,7 @@ export default function DashboardPage() {
           progress={kpis?.automatisierungsquote ?? 0}
         />
         <KpiCard
-          label="Offene Freigaben"
+          label={t("kpi.openApprovals")}
           value={<CountUp value={kpis?.offene_freigaben ?? 0} />}
           icon={Clock}
           badge={dringend ? { text: "dringend", cls: "bg-red-50 text-red-700" } : undefined}
@@ -586,7 +588,7 @@ export default function DashboardPage() {
           }
         />
         <KpiCard
-          label="Anomalie-Alerts"
+          label={t("kpi.anomalyAlerts")}
           value={<CountUp value={kpis?.anomalie_alerts ?? 0} />}
           icon={ShieldAlert}
           badge={

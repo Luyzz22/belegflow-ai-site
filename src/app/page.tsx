@@ -20,6 +20,8 @@ import Footer from "@/components/Footer";
 import Faq from "@/components/landing/Faq";
 import HeroMockup from "@/components/landing/HeroMockup";
 import SocialProofBar from "@/components/landing/SocialProofBar";
+import Testimonials from "@/components/landing/Testimonials";
+import TryFreeCta from "@/components/landing/TryFreeCta";
 
 const VALUE_PROPS: { icon: LucideIcon; stat: string; title: string; desc: string; cta?: { label: string; href: string } }[] = [
   {
@@ -125,13 +127,7 @@ export default function HomePage() {
               DSGVO-konform. Hosting Deutschland.
             </p>
             <div className="fc-rise mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#FFB900] px-8 py-4 text-lg font-bold text-[#003856] transition-all hover:bg-[#e6a800] active:scale-95"
-              >
-                Kostenlos testen
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+              <TryFreeCta />
               <Link href="/login" className="font-medium text-[#003856] underline underline-offset-4 hover:text-[#002a42]">
                 Live-Demo ansehen →
               </Link>
@@ -174,6 +170,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Social Proof — Testimonials */}
+      <Testimonials />
 
       {/* So funktioniert es */}
       <section className="border-y border-[rgba(0,56,86,0.08)] bg-[#faf9f7] py-20 sm:py-24">
