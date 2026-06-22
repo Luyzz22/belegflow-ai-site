@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BrandLink } from "@/components/Brand";
 
 const LINKS: [string, string][] = [
+  ["/e-rechnung-pruefen", "E-Rechnung prüfen"],
   ["/preise", "Preise"],
   ["/trust", "Trust Center"],
   ["/compliance", "Compliance"],

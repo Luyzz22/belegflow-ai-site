@@ -4,6 +4,7 @@ import TrustBadges from "@/components/TrustBadges";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const LINKS: [string, string][] = [
+  ["/e-rechnung-pruefen", "E-Rechnung prüfen"],
   ["/trust", "Trust Center"],
   ["/status", "Systemstatus"],
   ["/sicherheit", "Sicherheit"],
