@@ -31,7 +31,7 @@ interface LineItem {
 }
 interface ValidationResult {
   level: { syntax: LevelValue; schema: LevelValue; schematron: LevelValue };
-  summary: { valid: boolean; errors: number; warnings: number; format?: string | null; profile?: string | null };
+  summary: { valid: boolean; errors: number; warnings: number; format?: string | null; profile?: string | null; engine?: string | null };
   messages: { level: "error" | "warning" | "info" | string; rule?: string | null; field?: string | null; text: string }[];
   readable?: {
     invoiceNumber?: string | null;
@@ -300,6 +300,12 @@ export default function ERechnungCheck() {
               );
             })}
           </div>
+
+          {result.summary?.engine === "kosit-python" && (
+            <p className="text-xs text-[#94a3b8]">
+              Basis-Prüfung (EN-16931-Pflichtfelder) — die vollständige Schematron-Validierung ist derzeit nicht aktiv.
+            </p>
+          )}
 
           {/* Summary */}
           <div className={CARD}>
