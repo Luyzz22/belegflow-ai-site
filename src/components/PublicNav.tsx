@@ -6,6 +6,7 @@ import { BrandLink } from "@/components/Brand";
 
 const LINKS: [string, string][] = [
   ["/e-rechnung-pruefen", "E-Rechnung prüfen"],
+  ["/wissen", "Wissen"],
   ["/preise", "Preise"],
   ["/trust", "Trust Center"],
   ["/compliance", "Compliance"],
