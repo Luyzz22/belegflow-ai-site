@@ -220,3 +220,78 @@ html.dark *::-webkit-scrollbar-thumb { background: #3a3f4b; }
     color: #64748b;
   }
 }
+
+/* ───────────────────────── Landing: Premium Interactions ───────────────────────── */
+
+/* Aurora / mesh background drift (brand-colored, NOT generic AI gradient) */
+@keyframes fc-aurora {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(3%, -4%, 0) scale(1.08); }
+  66%      { transform: translate3d(-3%, 3%, 0) scale(0.96); }
+}
+.fc-aurora { will-change: transform; animation: fc-aurora 18s ease-in-out infinite; }
+.fc-aurora-slow { will-change: transform; animation: fc-aurora 26s ease-in-out infinite reverse; }
+
+/* Floating chips (depth layers) */
+@keyframes fc-float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.fc-floaty { animation: fc-float-y 6s ease-in-out infinite; }
+.fc-floaty-2 { animation: fc-float-y 7.5s ease-in-out infinite; }
+
+/* Conic sheen sweep across CTA / badges */
+@keyframes fc-sheen {
+  0%   { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+.fc-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  pointer-events: none;
+}
+.fc-sheen:hover::after { animation: fc-sheen 0.9s ease; }
+
+/* Scroll-reveal (driven by IntersectionObserver adding .is-visible) */
+.fc-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.fc-reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+/* 3D tilt surfaces */
+.fc-tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+  transition: transform 0.18s ease-out;
+  transform-style: preserve-3d;
+}
+.fc-tilt-glow {
+  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), rgba(200,152,90,0.12), transparent 40%);
+}
+
+/* Animated marquee (integration logos) */
+@keyframes fc-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.fc-marquee-track { display: flex; width: max-content; animation: fc-marquee 28s linear infinite; }
+.fc-marquee:hover .fc-marquee-track { animation-play-state: paused; }
+
+/* Animated gradient grid floor */
+@keyframes fc-grid-pan {
+  from { background-position: 0 0; }
+  to   { background-position: 0 40px; }
+}
+
+/* Respect reduced motion globally for landing flourishes */
+@media (prefers-reduced-motion: reduce) {
+  .fc-aurora, .fc-aurora-slow, .fc-floaty, .fc-floaty-2 { animation: none !important; }
+  .fc-marquee-track { animation: none !important; }
+  .fc-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .fc-tilt { transform: none !important; }
+}

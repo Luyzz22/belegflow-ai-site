@@ -18,10 +18,12 @@ import {
 import PublicNav from "@/components/PublicNav";
 import Footer from "@/components/Footer";
 import Faq from "@/components/landing/Faq";
-import HeroMockup from "@/components/landing/HeroMockup";
 import SocialProofBar from "@/components/landing/SocialProofBar";
 import Testimonials from "@/components/landing/Testimonials";
-import TryFreeCta from "@/components/landing/TryFreeCta";
+import InteractiveHero from "@/components/landing/InteractiveHero";
+import Integrations from "@/components/landing/Integrations";
+import Reveal from "@/components/landing/Reveal";
+import TiltCard from "@/components/landing/TiltCard";
 
 const VALUE_PROPS: { icon: LucideIcon; stat: string; title: string; desc: string; cta?: { label: string; href: string } }[] = [
   {
@@ -110,63 +112,38 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#f8f6f3]">
       <PublicNav />
 
-      {/* Hero */}
-      <section className="fc-grid-accent relative overflow-hidden border-b border-[rgba(0,56,86,0.08)]">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-16 sm:py-24 lg:grid-cols-[60%_40%]">
-          <div>
-            <p className="fc-fade-in text-xs font-semibold uppercase tracking-wider text-[#c8985a]">
-              KI-native Rechnungsverarbeitung
-            </p>
-            <h1 className="fc-rise mt-5 text-balance text-4xl font-bold leading-[1.1] tracking-tight text-[#1a1a2e] sm:text-5xl lg:text-6xl">
-              Rechnungen in Sekunden
-              <br />
-              statt in Minuten.
-            </h1>
-            <p className="fc-rise mt-6 max-w-xl text-base text-[#64748b] sm:text-lg">
-              FlowCheck AI+ prüft, validiert und kontiert Ihre Eingangsrechnungen automatisch. DATEV-ready.
-              DSGVO-konform. Hosting Deutschland.
-            </p>
-            <div className="fc-rise mt-8 flex flex-wrap items-center gap-4">
-              <TryFreeCta />
-              <Link href="/login" className="font-medium text-[#003856] underline underline-offset-4 hover:text-[#002a42]">
-                Live-Demo ansehen →
-              </Link>
-            </div>
-            <p className="fc-fade-in mt-5 text-sm text-[#64748b]">
-              Keine Kreditkarte · 14 Tage kostenlos · DSGVO-konform
-            </p>
-          </div>
+      {/* Hero — interaktiv (3D-Tilt, Aurora, Live-Stats) */}
+      <InteractiveHero />
 
-          <div className="fc-rise flex justify-center lg:justify-end">
-            <HeroMockup />
-          </div>
-        </div>
-      </section>
+      {/* Integrationen */}
+      <Integrations />
 
       {/* Social Proof */}
       <SocialProofBar />
 
       {/* Warum FlowCheck — Ergebnisse */}
       <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
-        <div className="mb-12 text-center">
+        <Reveal className="mb-12 text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Warum FlowCheck?</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">Ergebnisse, keine Versprechen</h2>
-        </div>
+        </Reveal>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {VALUE_PROPS.map(({ icon: Icon, stat, title, desc, cta }) => (
-            <div key={stat} className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-7 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-all hover:shadow-md">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
-                <Icon className="h-6 w-6" />
-              </div>
-              <p className="text-2xl font-bold text-[#003856]">{stat}</p>
-              <h3 className="mt-2 font-semibold text-[#1a1a2e]">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-[#64748b]">{desc}</p>
-              {cta && (
-                <Link href={cta.href} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#003856] hover:gap-1.5">
-                  {cta.label} <ArrowRight className="h-4 w-4" />
-                </Link>
-              )}
-            </div>
+          {VALUE_PROPS.map(({ icon: Icon, stat, title, desc, cta }, i) => (
+            <Reveal key={stat} delay={i * 100}>
+              <TiltCard max={6} className="h-full rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-7 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-shadow hover:shadow-xl">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <p className="text-2xl font-bold text-[#003856]">{stat}</p>
+                <h3 className="mt-2 font-semibold text-[#1a1a2e]">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#64748b]">{desc}</p>
+                {cta && (
+                  <Link href={cta.href} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#003856] hover:gap-1.5">
+                    {cta.label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </TiltCard>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -176,7 +153,7 @@ export default function HomePage() {
 
       {/* So funktioniert es */}
       <section className="border-y border-[rgba(0,56,86,0.08)] bg-[#faf9f7] py-20 sm:py-24">
-        <div className="mx-auto max-w-5xl px-6 text-center">
+        <Reveal className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Ablauf</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">In drei Schritten zur Automatisierung</h2>
           <div className="relative mt-14 grid grid-cols-1 gap-10 md:grid-cols-3">
@@ -194,16 +171,16 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Vergleich */}
       <section className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <div className="mb-10 text-center">
+        <Reveal className="mb-10 text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Vergleich</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">FlowCheck vs. manuelle Bearbeitung</h2>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
+        </Reveal>
+        <Reveal delay={120} className="overflow-hidden rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[rgba(0,56,86,0.08)] text-left">
@@ -226,20 +203,21 @@ export default function HomePage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Reveal>
       </section>
 
       {/* Pricing */}
       <section className="border-y border-[rgba(0,56,86,0.08)] bg-[#faf9f7] py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-12 text-center">
+          <Reveal className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Preise</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">Transparent. Planbar. Ohne Setup-Kosten.</h2>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-            {PRICING.map(({ tier, price, features, cta, href, featured }) => (
-              <div
+            {PRICING.map(({ tier, price, features, cta, href, featured }, i) => (
+              <Reveal
                 key={tier}
+                delay={i * 100}
                 className={`relative flex flex-col rounded-2xl bg-white p-7 transition-all ${
                   featured ? "shadow-md ring-2 ring-[#003856]" : "border border-[rgba(0,56,86,0.08)] shadow-[0_1px_3px_rgba(0,56,86,0.06)] hover:shadow-md"
                 }`}
@@ -270,7 +248,7 @@ export default function HomePage() {
                 >
                   {cta}
                 </Link>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -278,19 +256,21 @@ export default function HomePage() {
 
       {/* Trust */}
       <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
-        <div className="mb-12 text-center">
+        <Reveal className="mb-12 text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Vertrauen &amp; Sicherheit</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">Entwickelt für deutsche Compliance-Anforderungen</h2>
-        </div>
+        </Reveal>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {TRUST_CARDS.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-all hover:shadow-md">
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
-                <Icon className="h-5 w-5" />
-              </div>
-              <h3 className="font-semibold text-[#1a1a2e]">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-[#64748b]">{desc}</p>
-            </div>
+          {TRUST_CARDS.map(({ icon: Icon, title, desc }, i) => (
+            <Reveal key={title} delay={i * 80}>
+              <TiltCard max={6} className="h-full rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)] transition-shadow hover:shadow-xl">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#003856]/5 text-[#003856]">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-[#1a1a2e]">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#64748b]">{desc}</p>
+              </TiltCard>
+            </Reveal>
           ))}
         </div>
       </section>
