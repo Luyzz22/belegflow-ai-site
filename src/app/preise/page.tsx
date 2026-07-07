@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PublicPage from "@/components/PublicPage";
+import Reveal from "@/components/landing/Reveal";
+import TiltCard from "@/components/landing/TiltCard";
 
 export const metadata: Metadata = {
   title: "Preise",
@@ -71,11 +73,12 @@ export default function PreisePage() {
       title="Preise"
       subtitle="Transparente Pläne ohne Setup-Kosten. 14 Tage kostenlos testen."
     >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {PLANS.map((p) => (
-          <div
-            key={p.tier}
-            className={`flex flex-col rounded-2xl bg-white p-7 shadow-sm ring-1 ${
+      <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
+        {PLANS.map((p, i) => (
+          <Reveal key={p.tier} delay={i * 100} className="h-full">
+          <TiltCard
+            max={5}
+            className={`flex h-full flex-col rounded-2xl bg-white p-7 shadow-sm ring-1 transition-shadow hover:shadow-xl ${
               p.featured ? "ring-2 ring-[#003856]" : "ring-stone-200/60"
             }`}
           >
@@ -117,18 +120,21 @@ export default function PreisePage() {
                 14 Tage kostenlos testen
               </Link>
             )}
-          </div>
+          </TiltCard>
+          </Reveal>
         ))}
       </div>
 
       <section className="mt-16">
-        <h2 className="mb-6 text-2xl font-semibold tracking-tight text-[#003856]">Häufige Fragen</h2>
+        <Reveal>
+          <h2 className="mb-6 text-2xl font-semibold tracking-tight text-[#003856]">Häufige Fragen</h2>
+        </Reveal>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {FAQ.map(([q, a]) => (
-            <div key={q} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200/60">
+          {FAQ.map(([q, a], i) => (
+            <Reveal key={q} delay={i * 80} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200/60">
               <h3 className="text-base font-semibold text-stone-800">{q}</h3>
               <p className="mt-2 text-sm leading-relaxed text-stone-500">{a}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>

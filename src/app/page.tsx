@@ -1,8 +1,5 @@
 import Link from "next/link";
 import {
-  Upload,
-  Sparkles,
-  CheckCircle2,
   ShieldCheck,
   FileCheck,
   Lock,
@@ -22,6 +19,7 @@ import SocialProofBar from "@/components/landing/SocialProofBar";
 import Testimonials from "@/components/landing/Testimonials";
 import InteractiveHero from "@/components/landing/InteractiveHero";
 import Integrations from "@/components/landing/Integrations";
+import HowItWorks from "@/components/landing/HowItWorks";
 import Reveal from "@/components/landing/Reveal";
 import TiltCard from "@/components/landing/TiltCard";
 
@@ -45,12 +43,6 @@ const VALUE_PROPS: { icon: LucideIcon; stat: string; title: string; desc: string
     desc: "Berechnen Sie Ihren konkreten ROI in unter einer Minute.",
     cta: { label: "Jetzt berechnen", href: "/roi" },
   },
-];
-
-const STEPS: { num: string; icon: LucideIcon; title: string; desc: string }[] = [
-  { num: "1", icon: Upload, title: "Rechnung hochladen", desc: "PDF, Scan oder E-Rechnung — einzeln oder im Stapel." },
-  { num: "2", icon: Sparkles, title: "KI prüft in Sekunden", desc: "Felder extrahieren, §14 validieren, kontieren." },
-  { num: "3", icon: CheckCircle2, title: "Freigeben & Exportieren", desc: "Mehrstufig genehmigen und DATEV-ready exportieren." },
 ];
 
 const COMPARE: { label: string; manuell: string | boolean; flow: string | boolean }[] = [
@@ -151,28 +143,8 @@ export default function HomePage() {
       {/* Social Proof — Testimonials */}
       <Testimonials />
 
-      {/* So funktioniert es */}
-      <section className="border-y border-[rgba(0,56,86,0.08)] bg-[#faf9f7] py-20 sm:py-24">
-        <Reveal className="mx-auto max-w-5xl px-6 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#c8985a]">Ablauf</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#1a1a2e]">In drei Schritten zur Automatisierung</h2>
-          <div className="relative mt-14 grid grid-cols-1 gap-10 md:grid-cols-3">
-            <div className="absolute left-1/2 top-6 hidden h-px w-2/3 -translate-x-1/2 bg-[rgba(0,56,86,0.12)] md:block" aria-hidden />
-            {STEPS.map(({ num, icon: Icon, title, desc }, i) => (
-              <div key={num} className="fc-rise group relative flex flex-col items-center" style={{ animationDelay: `${i * 150}ms` }}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003856] text-lg font-bold text-white ring-8 ring-[#faf9f7] transition-transform group-hover:scale-105">
-                  {num}
-                </div>
-                <div className="mt-5 flex items-center gap-2 font-semibold text-[#1a1a2e]">
-                  <Icon className="h-5 w-5 text-[#c8985a]" />
-                  {title}
-                </div>
-                <p className="mt-1.5 max-w-xs text-sm text-[#64748b]">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-      </section>
+      {/* So funktioniert es — Scrollytelling */}
+      <HowItWorks />
 
       {/* Vergleich */}
       <section className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
