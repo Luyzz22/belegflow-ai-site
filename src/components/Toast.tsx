@@ -32,7 +32,10 @@ export default function Toast({
       ) : (
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
       )}
-      <p className="text-sm font-medium text-[#1a1a2e]">{text}</p>
+      {/* Laufzeit-Guard: nie ein Objekt als React-Child rendern (React #31). */}
+      <p className="text-sm font-medium text-[#1a1a2e]">
+        {typeof text === "string" ? text : "Unbekannter Fehler"}
+      </p>
       <button
         onClick={onClose}
         aria-label="Schließen"

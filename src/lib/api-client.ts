@@ -75,6 +75,34 @@ export function genericApiMessage(status: number): string {
   }
 }
 
+/** FastAPI/Pydantic-Fehler sicher in einen String wandeln (React #31-Schutz).
+ *  422 liefert { detail: [{ type, loc, msg, input }, …] } — NIE das Objekt/Array
+ *  direkt als React-Child rendern, IMMER durch toMessage(). */
+export function toMessage(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((d) => {
+        if (typeof d === "string") return d;
+        if (d && typeof d === "object" && typeof (d as { msg?: unknown }).msg === "string") {
+          return (d as { msg: string }).msg;
+        }
+        return null;
+      })
+      .filter((x): x is string => x !== null);
+    if (parts.length > 0) return parts.join("; ");
+    return "Unbekannter Fehler";
+  }
+  if (detail && typeof detail === "object") {
+    const o = detail as { msg?: unknown; message?: unknown; detail?: unknown; error?: unknown };
+    if (typeof o.msg === "string") return o.msg;
+    if (typeof o.message === "string") return o.message;
+    if (o.detail !== undefined && o.detail !== detail) return toMessage(o.detail);
+    if (typeof o.error === "string") return o.error;
+  }
+  return "Unbekannter Fehler";
+}
+
 /** 401 → Session verwerfen und (außerhalb der Auth-Seiten) zum Login schicken. */
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
@@ -336,17 +364,25 @@ export const flowcheckApi = {
           const res = await uploadFile("/upload", file);
           if (!res.ok) {
             if (res.status === 401) handleUnauthorized();
-            const err: { detail?: string; error?: string } = await res
+            // 422 liefert detail als Array von Objekten — via toMessage() zu String
+            // normalisieren, sonst crasht das Rendern (React #31).
+            const err: { detail?: unknown; error?: unknown } = await res
               .json()
               .catch(() => ({}));
+            const raw = err.detail ?? err.error;
             return {
               filename: file.name,
               status: "error",
-              detail: err.detail || err.error || `HTTP ${res.status}`,
+              detail: raw !== undefined && raw !== null ? toMessage(raw) : genericApiMessage(res.status),
             };
           }
-          const data: { id?: number; detail?: string } = await res.json().catch(() => ({}));
-          return { filename: file.name, status: "ok", id: data.id, detail: data.detail };
+          const data: { id?: number; detail?: unknown } = await res.json().catch(() => ({}));
+          return {
+            filename: file.name,
+            status: "ok",
+            id: data.id,
+            detail: typeof data.detail === "string" ? data.detail : undefined,
+          };
         } catch {
           return { filename: file.name, status: "error", detail: "Netzwerkfehler beim Upload" };
         }

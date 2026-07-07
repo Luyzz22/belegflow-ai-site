@@ -16,7 +16,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { flowcheckApi, ApiError } from "@/lib/api-client";
+import { flowcheckApi, ApiError, toMessage } from "@/lib/api-client";
 import { isLimitReached, incrementUsage } from "@/lib/usage";
 import PageHeader from "@/components/PageHeader";
 import UploadCelebration from "@/components/UploadCelebration";
@@ -110,9 +110,11 @@ export default function UploadPage() {
       push(id, t2);
     };
 
-    const fail = (detail: string) => {
+    // Fehlertext IMMER durch toMessage() — Backend-Detail kann Objekt/Array sein (React #31).
+    const fail = (detail: unknown) => {
       clearTimers(id);
-      patch(id, (r) => ({ ...r, status: "error", errorStep: r.stepIndex, detail }));
+      const msg = detail ? toMessage(detail) : "Verarbeitung fehlgeschlagen";
+      patch(id, (r) => ({ ...r, status: "error", errorStep: r.stepIndex, detail: msg }));
     };
 
     flowcheckApi

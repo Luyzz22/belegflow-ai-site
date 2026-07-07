@@ -46,7 +46,10 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
       className={`fc-toast flex w-80 items-start gap-3 rounded-2xl border bg-white px-4 py-3.5 shadow-[0_8px_30px_rgba(0,56,86,0.16)] ${meta.ring}`}
     >
       <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${meta.iconCls}`} />
-      <p className="flex-1 text-sm font-medium text-[#1a1a2e]">{item.text}</p>
+      {/* Laufzeit-Guard: nie ein Objekt als React-Child rendern (React #31). */}
+      <p className="flex-1 text-sm font-medium text-[#1a1a2e]">
+        {typeof item.text === "string" ? item.text : "Unbekannter Fehler"}
+      </p>
       {item.undo && (
         <button
           onClick={() => {

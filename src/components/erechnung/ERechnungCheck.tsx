@@ -330,10 +330,11 @@ export default function ERechnungCheck() {
                       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${m.level === "error" ? "text-red-600" : m.level === "warning" ? "text-amber-600" : "text-stone-400"}`} />
                       <div className="min-w-0">
                         <div className="flex flex-wrap gap-1.5">
-                          {m.rule && <span className="rounded bg-[#003856]/5 px-1.5 py-0.5 font-mono text-xs font-semibold text-[#003856]">{m.rule}</span>}
-                          {m.field && <span className="rounded bg-[#c8985a]/10 px-1.5 py-0.5 font-mono text-xs font-semibold text-[#b07f42]">{m.field}</span>}
+                          {typeof m.rule === "string" && m.rule && <span className="rounded bg-[#003856]/5 px-1.5 py-0.5 font-mono text-xs font-semibold text-[#003856]">{m.rule}</span>}
+                          {typeof m.field === "string" && m.field && <span className="rounded bg-[#c8985a]/10 px-1.5 py-0.5 font-mono text-xs font-semibold text-[#b07f42]">{m.field}</span>}
                         </div>
-                        <p className="mt-1 text-sm text-[#1a1a2e]">{m.text}</p>
+                        {/* Laufzeit-Guard: Backend-Text nie ungeprüft als React-Child (React #31). */}
+                        <p className="mt-1 text-sm text-[#1a1a2e]">{typeof m.text === "string" ? m.text : "—"}</p>
                       </div>
                     </li>
                   );

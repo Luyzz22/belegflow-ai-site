@@ -73,7 +73,8 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
       </div>
       <p className="text-sm font-semibold text-red-700">Etwas ist schiefgelaufen</p>
       <p className="max-w-md text-center text-sm text-[#64748b]">
-        {message || "Daten konnten nicht geladen werden."}
+        {/* Laufzeit-Guard: nie ein Objekt als React-Child rendern (React #31). */}
+        {typeof message === "string" && message ? message : "Daten konnten nicht geladen werden."}
       </p>
       {onRetry && (
         <button
