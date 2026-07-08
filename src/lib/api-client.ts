@@ -135,12 +135,13 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-/** Einzel-Datei-Upload (multipart/form-data) — Feldname "file", KEIN JSON-Content-Type
- *  (der Browser setzt multipart/form-data inkl. Boundary automatisch). */
+/** Einzel-Datei-Upload (multipart/form-data) — Feldname "files" (Backend erwartet
+ *  List[UploadFile]). KEIN Content-Type manuell setzen: der Browser setzt
+ *  multipart/form-data inkl. Boundary selbst. */
 async function uploadFile(path: string, file: File): Promise<Response> {
   const token = getToken();
   const fd = new FormData();
-  fd.append("file", file);
+  fd.append("files", file);
   return fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },

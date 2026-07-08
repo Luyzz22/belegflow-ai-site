@@ -7,6 +7,14 @@
 // einen 401. Das Proxy-Ziel wird serverseitig über die Umgebungsvariable
 // BACKEND_API_URL gesteuert.
 
+// Vercel-Live-Feedback-Widget wird NUR auf Preview-Deployments injiziert
+// (nicht in Production). Deshalb dessen Hosts nur dort erlauben — Production-CSP
+// bleibt strikt.
+const isPreview = process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production";
+const liveScript = isPreview ? " https://vercel.live" : "";
+const liveConnect = isPreview ? " https://vercel.live https://*.pusher.com wss://*.pusher.com" : "";
+const liveFrame = isPreview ? "frame-src https://vercel.live" : "frame-src 'none'";
+
 const nextConfig = {
   async headers() {
     return [
@@ -23,13 +31,13 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              `script-src 'self' 'unsafe-inline' 'unsafe-eval'${liveScript}`,
               // fonts.googleapis.com nötig, da Inter per <link>-Stylesheet geladen wird
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https:",
               "font-src 'self' data: https:",
-              "connect-src 'self' https://erechnung.sbsdeutschland.com",
-              "frame-src 'none'",
+              `connect-src 'self' https://erechnung.sbsdeutschland.com${liveConnect}`,
+              liveFrame,
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
