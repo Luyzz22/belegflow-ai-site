@@ -106,17 +106,21 @@ interface ActivityItem {
 
 /** Mini-Sparkline als normalisierte SVG-Polyline (ohne Achsen). */
 function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // Defensiv: nur endliche Zahlen — verhindert NaN-Koordinaten in der Polyline.
+  const clean = values.filter((v) => Number.isFinite(v));
+  if (clean.length < 2) return null;
+  const min = Math.min(...clean);
+  const max = Math.max(...clean);
   const range = max - min || 1;
-  const points = values
+  const points = clean
     .map((v, i) => {
-      const x = (i / (values.length - 1)) * 100;
+      const x = (i / (clean.length - 1)) * 100;
       const y = 26 - ((v - min) / range) * 24;
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     })
+    .filter((p) => !p.includes("NaN"))
     .join(" ");
+  if (!points) return null;
   return (
     <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="h-8 w-full" aria-hidden="true">
       <polyline
