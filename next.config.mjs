@@ -13,7 +13,10 @@
 const isPreview = process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production";
 const liveScript = isPreview ? " https://vercel.live" : "";
 const liveConnect = isPreview ? " https://vercel.live https://*.pusher.com wss://*.pusher.com" : "";
-const liveFrame = isPreview ? "frame-src https://vercel.live" : "frame-src 'none'";
+// blob: nötig für die PDF-Vorschau (iframe src=blob:… nach Bearer-Fetch).
+const liveFrame = isPreview
+  ? "frame-src 'self' blob: https://vercel.live"
+  : "frame-src 'self' blob:";
 
 const nextConfig = {
   async headers() {

@@ -308,6 +308,68 @@ export interface DatevBuchung {
   [key: string]: string | number | undefined;
 }
 
+// ── Feldnamen-Normalisierung ─────────────────────────────────────────
+// Das Backend/DB liefert Beträge & Kennungen teils unter abweichenden
+// Spaltennamen (z. B. betrag_brutto, mwst_betrag, ust_idnr,
+// rechnungsaussteller). Hier auf die kanonischen Frontend-Feldnamen
+// abbilden, damit die UI vorhandene Werte nicht unterschlägt.
+function _num(v: unknown): number {
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  if (typeof v === "string") {
+    const n = parseFloat(v.replace(/\s/g, "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+function _str(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v == null) return "";
+  return String(v);
+}
+function _pick(o: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const k of keys) {
+    const val = o[k];
+    if (val !== undefined && val !== null && val !== "") return val;
+  }
+  return undefined;
+}
+
+function normalizeInvoiceDetail(raw: unknown): InvoiceDetail {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return {
+    ...(o as Partial<InvoiceDetail> as InvoiceDetail),
+    lieferant: _str(_pick(o, "lieferant", "rechnungsaussteller", "aussteller", "supplier")),
+    rechnungsnummer: _str(_pick(o, "rechnungsnummer", "rechnungs_nr", "invoice_number")),
+    datum: _str(_pick(o, "datum", "rechnungsdatum", "invoice_date")),
+    betrag: _num(_pick(o, "betrag", "betrag_brutto", "brutto", "gesamtbetrag", "total")),
+    netto: _num(_pick(o, "netto", "betrag_netto", "netto_betrag")),
+    ust_betrag: _num(_pick(o, "ust_betrag", "mwst_betrag", "steuer_betrag", "vat_amount")),
+    ust_satz: _num(_pick(o, "ust_satz", "mwst_satz", "steuersatz", "vat_rate")),
+    iban: _str(_pick(o, "iban")),
+    ust_id: _str(_pick(o, "ust_id", "ust_idnr", "ustid", "umsatzsteuer_id", "vat_id")),
+    waehrung: _str(_pick(o, "waehrung", "currency")) || "EUR",
+  };
+}
+
+function normalizeInvoiceList(raw: unknown): InvoiceList {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const items = Array.isArray(o.items) ? o.items : [];
+  return {
+    total: _num(o.total) || items.length,
+    items: items.map((it): InvoiceListItem => {
+      const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+      return {
+        ...(r as Partial<InvoiceListItem> as InvoiceListItem),
+        lieferant: _str(_pick(r, "lieferant", "rechnungsaussteller", "aussteller")),
+        rechnungsnummer: _str(_pick(r, "rechnungsnummer", "rechnungs_nr", "invoice_number")),
+        datum: _str(_pick(r, "datum", "rechnungsdatum", "invoice_date")),
+        betrag: _num(_pick(r, "betrag", "betrag_brutto", "brutto", "gesamtbetrag")),
+        waehrung: _str(_pick(r, "waehrung", "currency")) || "EUR",
+      };
+    }),
+  };
+}
+
 // ─────────────────────────── API-Methoden ───────────────────────────
 
 export const flowcheckApi = {
@@ -342,7 +404,7 @@ export const flowcheckApi = {
       if (status) items = items.filter((i) => i.status === status);
       return Promise.resolve({ items, total: items.length });
     }
-    return api<InvoiceList>(`/invoices${params ? `?${params}` : ""}`);
+    return api<unknown>(`/invoices${params ? `?${params}` : ""}`).then(normalizeInvoiceList);
   },
   invoice: (id: number): Promise<InvoiceDetail> => {
     if (isDemo()) {
@@ -350,7 +412,7 @@ export const flowcheckApi = {
       if (d) return Promise.resolve(d);
       return Promise.reject(new ApiError("Rechnung nicht gefunden", 404));
     }
-    return api<InvoiceDetail>(`/invoices/${id}`);
+    return api<unknown>(`/invoices/${id}`).then(normalizeInvoiceDetail);
   },
 
   // Upload (multipart) — Backend erwartet EIN Feld "file" pro Request.
@@ -402,8 +464,17 @@ export const flowcheckApi = {
   // Lieferanten
   lieferanten: (): Promise<{ items: Lieferant[] }> =>
     isDemo() ? Promise.resolve({ items: demo.demoLieferanten() }) : api<{ items: Lieferant[] }>("/lieferanten"),
-  lieferant: (name: string): Promise<LieferantDetail> =>
-    isDemo() ? Promise.resolve(demo.demoLieferantDetail(name)) : api<LieferantDetail>(`/lieferanten/${encodeURIComponent(name)}`),
+  lieferant: (name: string): Promise<LieferantDetail> => {
+    // Defensiv: ungültiger Name → gar keinen Request feuern (verhindert
+    // /lieferanten/undefined und einen unnötigen 404/422).
+    const clean = (name || "").trim();
+    if (!clean || clean === "undefined" || clean === "null") {
+      return Promise.reject(new ApiError("Kein gültiger Lieferant", 400));
+    }
+    return isDemo()
+      ? Promise.resolve(demo.demoLieferantDetail(clean))
+      : api<LieferantDetail>(`/lieferanten/${encodeURIComponent(clean)}`);
+  },
 
   // DATEV-Export — Endpoints laut Design-Prompt
   datevPreview: (): Promise<{ items: DatevBuchung[]; total: number }> =>

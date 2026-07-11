@@ -175,8 +175,13 @@ export default function InvoiceDetailPage() {
     const now = Date.now();
     const sk = parseSkonto(detail.zahlungsbedingungen, detail.datum, detail.betrag, now);
     const mem = getKontierungMemory(detail.lieferant);
-    flowcheckApi
-      .lieferant(detail.lieferant)
+    // Guard: ohne gültigen Lieferantennamen KEIN Request (verhindert
+    // GET /api/app/lieferanten/undefined).
+    const lieferantName = (detail.lieferant || "").trim();
+    const dupProbe = lieferantName
+      ? flowcheckApi.lieferant(lieferantName)
+      : Promise.reject(new Error("kein Lieferant"));
+    dupProbe
       .then((d) => {
         if (cancelled) return;
         setDupMatch(findDuplicate(detail, d.rechnungen || []));
@@ -211,7 +216,10 @@ export default function InvoiceDetailPage() {
       })
       .then((blob) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
+        // MIME erzwingen: manche Backends liefern application/octet-stream,
+        // dann rendert der iframe die PDF nicht (Download statt Vorschau).
+        const pdf = blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" });
+        objectUrl = URL.createObjectURL(pdf);
         setPdfUrl(objectUrl);
       })
       .catch(() => {
