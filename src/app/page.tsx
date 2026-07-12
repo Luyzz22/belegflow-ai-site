@@ -18,6 +18,7 @@ import Faq from "@/components/landing/Faq";
 import SocialProofBar from "@/components/landing/SocialProofBar";
 import Testimonials from "@/components/landing/Testimonials";
 import InteractiveHero from "@/components/landing/InteractiveHero";
+import ProductFilm from "@/components/landing/ProductFilm";
 import Integrations from "@/components/landing/Integrations";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Reveal from "@/components/landing/Reveal";
@@ -106,6 +107,9 @@ export default function HomePage() {
 
       {/* Hero — interaktiv (3D-Tilt, Aurora, Live-Stats) */}
       <InteractiveHero />
+
+      {/* Produktfilm */}
+      <ProductFilm />
 
       {/* Integrationen */}
       <Integrations />
