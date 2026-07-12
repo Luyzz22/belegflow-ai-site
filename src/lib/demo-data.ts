@@ -35,8 +35,6 @@ const SEEDS: Seed[] = [
   { id: 202, lieferant: "Böttcher AG Office Supplies", nr: "320251470012", daysAgo: 6, netto: 89.9, satz: 19, status: "verarbeitet", iban: "DE12500105170648489890", ustId: "DE114108795", konto: "6300" },
   { id: 203, lieferant: "Böttcher AG Office Supplies", nr: "320251471455", daysAgo: 2, netto: 432.1, satz: 19, status: "verarbeitet", iban: "DE12500105170648489890", ustId: "DE114108795", konto: "6300" },
   { id: 204, lieferant: "Böttcher AG Office Supplies", nr: "320251472900", daysAgo: 18, netto: 156.0, satz: 19, status: "freigegeben", iban: "DE12500105170648489890", ustId: "DE114108795", konto: "6300" },
-  { id: 301, lieferant: "Schenk Digital Solutions GmbH", nr: "RE-2026-00487", daysAgo: 4, netto: 22188.0, satz: 19, status: "verarbeitet", iban: "DE44500105175407324931", ustId: "DE298765432", konto: "4900", zb: "3% Skonto bei Zahlung innerhalb von 14 Tagen" },
-  { id: 302, lieferant: "Schenk Digital Solutions GmbH", nr: "RE-2026-00521", daysAgo: 15, netto: 8400.0, satz: 19, status: "exportiert", iban: "DE44500105175407324931", ustId: "DE298765432", konto: "4900" },
   { id: 401, lieferant: "TechVision Enterprises AG", nr: "TV-2026-7781", daysAgo: 5, netto: 22188.97, satz: 19, status: "verarbeitet", iban: "", ustId: "", konto: "4900" },
   { id: 402, lieferant: "TechVision Enterprises AG", nr: "TV-2026-7799", daysAgo: 8, netto: 4900.0, satz: 19, status: "freigegeben", iban: "DE21300209005044875115", ustId: "DE345678912", konto: "4900" },
   { id: 403, lieferant: "TechVision Enterprises AG", nr: "TV-2026-7810", daysAgo: 1, netto: 1290.0, satz: 19, status: "fehler", iban: "", ustId: "", konto: "" },
@@ -128,7 +126,6 @@ export function demoLieferanten(): Lieferant[] {
   const risk: Record<string, number> = {
     "Müller & Brandt Maschinenbau GmbH": 18,
     "Böttcher AG Office Supplies": 12,
-    "Schenk Digital Solutions GmbH": 44,
     "TechVision Enterprises AG": 72,
     "Qonto Banking": 8,
   };

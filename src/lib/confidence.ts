@@ -146,7 +146,7 @@ export function computeConfidence(
     status: supplierKnown ? "pass" : "warn",
     detail: supplierKnown
       ? `Bekannter Lieferant${count > 0 ? ` (${count} bisherige Rechnungen)` : ""}`
-      : `Erste Rechnung von „${detail.lieferant || "diesem Lieferanten"}“`,
+      : "Erste Rechnung dieses Lieferanten",
     hint: supplierKnown ? undefined : "Wird nach 2+ Rechnungen automatisch grün.",
   });
 

@@ -288,11 +288,20 @@ export default function DashboardPage() {
       freigegeben: 0,
       exportiert: 0,
     };
+    // Autoritative Verteilung vom Backend bevorzugen; sonst aus der Liste zählen.
+    const bd = kpis?.status_breakdown;
+    if (bd && typeof bd === "object") {
+      for (const key of Object.keys(counts)) {
+        const v = bd[key];
+        if (typeof v === "number" && Number.isFinite(v)) counts[key] = v;
+      }
+      return counts;
+    }
     for (const inv of invoices ?? []) {
       if (inv.status in counts) counts[inv.status] += 1;
     }
     return counts;
-  }, [invoices]);
+  }, [invoices, kpis]);
 
   const donutData = useMemo(
     () =>
