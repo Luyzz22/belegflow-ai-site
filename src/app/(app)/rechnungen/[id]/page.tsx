@@ -29,7 +29,7 @@ import {
   CreditCard,
   Workflow,
 } from "lucide-react";
-import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail } from "@/lib/api-client";
+import { flowcheckApi, ApiError, API_BASE, getToken, type InvoiceDetail, type Validierung } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
 import { computeConfidence } from "@/lib/confidence";
 import { findDuplicate, type DuplicateMatch } from "@/lib/duplicate";
@@ -55,6 +55,27 @@ import InvoiceComments from "@/components/InvoiceComments";
 type Tab = "validierung" | "kontierung" | "anomalien" | "ki" | "fluss";
 type Flash = { type: "success" | "error"; text: string } | null;
 
+/** Vereinheitlicht validierung_json.checks (aktuelles Shape) und das alte
+ *  pflichtangaben-Feld zu einer Liste { label, ok } für die Anzeige. */
+function toValidationChecks(v?: Validierung): { label: string; ok: boolean }[] {
+  if (!v) return [];
+  if (Array.isArray(v.checks) && v.checks.length > 0) {
+    return v.checks.map((c) => {
+      const label = c.feld || c.field || c.name || c.rule || c.label || c.message || c.text || "Prüfpunkt";
+      const ok =
+        c.ok ??
+        c.passed ??
+        c.valid ??
+        c.vorhanden ??
+        (typeof c.status === "string" ? /^(ok|pass|valid|true|erf|bestanden)/i.test(c.status) : true);
+      return { label, ok: !!ok };
+    });
+  }
+  return (v.pflichtangaben ?? []).map((p) =>
+    typeof p === "string" ? { label: p, ok: true } : { label: p.feld, ok: !!p.vorhanden }
+  );
+}
+
 const CARD =
   "rounded-2xl bg-white border border-[rgba(0,56,86,0.08)] shadow-[0_1px_3px_rgba(0,56,86,0.06)] p-6";
 const INPUT =
@@ -72,7 +93,9 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[rgba(0,56,86,0.06)] py-3 last:border-0">
       <dt className="text-sm text-[#64748b]">{label}</dt>
-      <dd className="text-right text-sm font-medium text-[#1a1a2e]">{value || "—"}</dd>
+      <dd className="text-right text-sm font-medium text-[#1a1a2e]">
+        {value || <span className="font-normal text-[#94a3b8]">nicht im Beleg gefunden</span>}
+      </dd>
     </div>
   );
 }
@@ -105,13 +128,22 @@ function EditField({
 }
 
 function ValidRow({ label, ok, mono }: { label: string; ok: boolean; mono?: string }) {
+  const present = !!(mono && mono.trim());
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[rgba(0,56,86,0.06)] py-3 last:border-0">
       <span className="text-sm text-[#64748b]">
         {label}
-        {mono && <span className="ml-2 font-mono text-[#1a1a2e]">{mono}</span>}
+        {present ? (
+          <span className="ml-2 font-mono text-[#1a1a2e]">{mono}</span>
+        ) : (
+          <span className="ml-2 text-[#94a3b8]">nicht im Beleg gefunden</span>
+        )}
       </span>
-      {ok ? (
+      {!present ? (
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500">
+          Nicht erkannt
+        </span>
+      ) : ok ? (
         <span className="fc-pop inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
           <CheckCircle2 className="h-3.5 w-3.5" />
           Gültig
@@ -340,7 +372,9 @@ export default function InvoiceDetailPage() {
 
   // Anzeige-Objekt = Original überlagert mit lokalen Korrekturen.
   const view: InvoiceDetail = { ...detail, ...overrides };
-  const pflicht = view.validierung?.pflichtangaben ?? [];
+  // Prüfpunkte aus dem aktuellen validierung_json.checks-Shape (Fallback:
+  // altes pflichtangaben-Feld), normalisiert auf { label, ok }.
+  const validationChecks = toValidationChecks(view.validierung);
   const anomalien = view.anomalien ?? [];
   const summeOk = Math.abs((view.netto || 0) + (view.ust_betrag || 0) - (view.betrag || 0)) <= 0.01;
   const supplierCount = supplierCounts.get(view.lieferant) ?? 0;
@@ -359,7 +393,7 @@ export default function InvoiceDetailPage() {
   // KI-Zusammenfassung (client-seitig aus den vorhandenen Daten).
   const kiSummary = [
     `Rechnung ${view.rechnungsnummer || `#${view.id}`} von ${view.lieferant || "—"} über ${eur(view.betrag, view.waehrung)}.`,
-    pflicht.length > 0 && pflicht.every((p) => (typeof p === "string" ? true : !!p.vorhanden))
+    validationChecks.length > 0 && validationChecks.every((c) => c.ok)
       ? "Alle Pflichtangaben vollständig,"
       : "Pflichtangaben unvollständig,",
     `IBAN ${view.validierung?.iban_valid ? "gültig" : "nicht verifiziert"},`,
@@ -642,8 +676,14 @@ export default function InvoiceDetailPage() {
               <Field label="Betrag" value={eur(view.betrag, view.waehrung)} />
               <Field label="Netto" value={eur(view.netto, view.waehrung)} />
               <Field label={`USt-Betrag (${pct(view.ust_satz)})`} value={eur(view.ust_betrag, view.waehrung)} />
-              <Field label="IBAN" value={view.iban} />
-              <Field label="USt-ID" value={view.ust_id} />
+              <Field
+                label="IBAN"
+                value={view.iban || <span className="font-normal text-[#94a3b8]">Nicht automatisch erkannt — im Beleg prüfen und ergänzen</span>}
+              />
+              <Field
+                label="USt-ID"
+                value={view.ust_id || <span className="font-normal text-[#94a3b8]">Nicht automatisch erkannt — im Beleg prüfen und ergänzen</span>}
+              />
             </dl>
           )}
         </section>
@@ -699,24 +739,22 @@ export default function InvoiceDetailPage() {
                 <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#64748b]">
                   §14 UStG · Pflichtangaben
                 </p>
-                {pflicht.length === 0 ? (
-                  <p className="text-sm text-[#64748b]">Keine Pflichtangaben hinterlegt.</p>
+                {validationChecks.length === 0 ? (
+                  <p className="text-sm text-[#64748b]">
+                    Für diesen Beleg liegt noch keine Pflichtangaben-Prüfung vor.
+                  </p>
                 ) : (
                   <ul className="space-y-2">
-                    {pflicht.map((p, i) => {
-                      const ok = typeof p === "string" ? true : !!p.vorhanden;
-                      const label = typeof p === "string" ? p : p.feld;
-                      return (
-                        <li key={i} className="flex items-center gap-2.5 text-sm">
-                          {ok ? (
-                            <CheckCircle2 className="fc-pop h-4 w-4 shrink-0 text-emerald-600" />
-                          ) : (
-                            <XCircle className="fc-pop h-4 w-4 shrink-0 text-red-600" />
-                          )}
-                          <span className="text-[#1a1a2e]">{label}</span>
-                        </li>
-                      );
-                    })}
+                    {validationChecks.map((c, i) => (
+                      <li key={i} className="flex items-center gap-2.5 text-sm">
+                        {c.ok ? (
+                          <CheckCircle2 className="fc-pop h-4 w-4 shrink-0 text-emerald-600" />
+                        ) : (
+                          <XCircle className="fc-pop h-4 w-4 shrink-0 text-red-600" />
+                        )}
+                        <span className="text-[#1a1a2e]">{c.label}</span>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>

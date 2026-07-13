@@ -192,10 +192,28 @@ export interface Kontierung {
   steuerschluessel: string;
 }
 
+/** Einzelner Prüfpunkt aus validierung_json.checks (defensiv typisiert —
+ *  Feld-/Status-Namen variieren je Backend-Version). */
+export interface ValidationCheck {
+  feld?: string;
+  field?: string;
+  name?: string;
+  rule?: string;
+  label?: string;
+  vorhanden?: boolean;
+  ok?: boolean;
+  passed?: boolean;
+  valid?: boolean;
+  status?: string; // "ok" | "pass" | "error" | "fail" | "warning" | …
+  message?: string;
+  text?: string;
+}
+
 export interface Validierung {
   iban_valid: boolean;
   ustid_valid: boolean;
   pflichtangaben: Array<{ feld: string; vorhanden: boolean } | string>;
+  checks?: ValidationCheck[];
 }
 
 export interface InvoiceDetail {
@@ -232,6 +250,8 @@ export interface DashboardKpis {
   aelteste_freigabe_stunden: number | null;
   anomalie_alerts: number;
   trend: Array<{ datum: string; anzahl: number }>;
+  /** Autoritative Status-Verteilung vom Backend (Status → Anzahl). */
+  status_breakdown?: Record<string, number>;
 }
 
 export interface Freigabe {
