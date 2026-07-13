@@ -105,7 +105,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#f8f6f3]">
       <PublicNav />
 
-      {/* Hero — interaktiv (3D-Tilt, Aurora, Live-Stats) */}
+      {/* Hero — drei interaktive Produkt-Szenen */}
       <InteractiveHero />
 
       {/* Produktfilm */}
