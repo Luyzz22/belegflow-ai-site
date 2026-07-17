@@ -1,16 +1,18 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import type { AppUser } from "@/lib/api-client";
+import { normalizeMe, type AppUser, type Entitlement } from "@/lib/api-client";
 
 interface AuthState {
   user: AppUser | null;
+  entitlement: Entitlement | null;
   loading: boolean;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthState>({
   user: null,
+  entitlement: null,
   loading: true,
   logout: () => {},
 });
@@ -42,6 +44,7 @@ function isTokenExpired(token: string): boolean {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [concurrentWarning, setConcurrentWarning] = useState(false);
 
@@ -68,16 +71,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error(String(res.status));
         return res.json();
       })
-      .then((me: AppUser) => {
+      .then((raw: unknown) => {
+        // /me kommt als { user, entitlement } (neu) ODER flach (alt).
+        const { user: me, entitlement: ent } = normalizeMe(raw);
         let stored: Partial<AppUser> = {};
         try {
-          const raw = localStorage.getItem("flowcheck_user");
-          if (raw) stored = JSON.parse(raw) as Partial<AppUser>;
+          const s = localStorage.getItem("flowcheck_user");
+          if (s) stored = JSON.parse(s) as Partial<AppUser>;
         } catch {
           stored = {};
         }
         localStorage.setItem("fc_last_check", String(Date.now()));
+        // /me liefert keinen Namen → aus dem beim Login gespeicherten User ergänzen.
         setUser({ name: stored.name, ...me });
+        setEntitlement(ent);
       })
       .catch(() => {
         localStorage.removeItem("flowcheck_token");
@@ -138,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, entitlement, loading, logout }}>
       {concurrentWarning && (
         <div className="fixed inset-x-0 top-0 z-[300] flex flex-wrap items-center justify-center gap-3 bg-amber-500 px-4 py-2.5 text-center text-sm font-medium text-[#1a1a2e] print:hidden">
           <span>⚠️ In einem anderen Tab oder Gerät wurde eine neue Anmeldung erkannt.</span>

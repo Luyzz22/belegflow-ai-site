@@ -161,6 +161,45 @@ export interface AppUser {
   name?: string;
   role: Role;
   tenant_id?: string;
+  company?: string;
+  is_admin?: boolean;
+  unlimited?: boolean;
+  plan?: string;
+}
+
+/** Entitlement/Paywall-Objekt aus /api/app/me bzw. /api/app/subscription. */
+export interface Entitlement {
+  plan?: string;
+  is_admin?: boolean;
+  unlimited?: boolean;
+  allowed?: boolean;
+  limit?: number | string; // Zahl oder "unlimited"
+  used?: number;
+  remaining?: number | string;
+  reason?: string;
+  message?: string;
+}
+
+export interface MeResponse {
+  user: AppUser;
+  entitlement: Entitlement | null;
+}
+
+/** /me kommt heute als { user, entitlement }; ältere Backends lieferten den
+ *  User flach. Beide Formen tolerant auf MeResponse abbilden. */
+export function normalizeMe(raw: unknown): MeResponse {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  if (o.user && typeof o.user === "object") {
+    return {
+      user: o.user as AppUser,
+      entitlement: (o.entitlement && typeof o.entitlement === "object" ? (o.entitlement as Entitlement) : null),
+    };
+  }
+  // Flaches Alt-Shape: raw IST der User (Entitlement evtl. eingebettet).
+  return {
+    user: o as unknown as AppUser,
+    entitlement: (o.entitlement && typeof o.entitlement === "object" ? (o.entitlement as Entitlement) : null),
+  };
 }
 
 export interface AuthResponse {
@@ -404,7 +443,9 @@ export const flowcheckApi = {
       method: "POST",
       body: JSON.stringify({ email, password, name }),
     }),
-  me: () => api<AppUser>("/me"),
+  me: (): Promise<MeResponse> => api<unknown>("/me").then(normalizeMe),
+  subscription: (): Promise<Entitlement> =>
+    api<Entitlement>("/subscription").catch(() => ({} as Entitlement)),
 
   // Passwort-Reset anfordern
   requestPasswordReset: (email: string) =>
