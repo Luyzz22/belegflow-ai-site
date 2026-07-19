@@ -40,6 +40,8 @@ import {
 import {
   flowcheckApi,
   ApiError,
+  deriveSuppliersFromInvoices,
+  deriveActivityFromInvoices,
   type DashboardKpis,
   type InvoiceListItem,
   type Lieferant,
@@ -239,11 +241,15 @@ export default function DashboardPage() {
           }
         }
         setInvoices(inv);
+        // Dedizierter Endpoint bevorzugt; liefert er nichts, aus den echten
+        // Rechnungen ableiten (nicht still leer lassen).
+        const suppliers = lief.length > 0 ? lief : deriveSuppliersFromInvoices(inv);
         setTopLieferanten(
-          [...lief].sort((a, b) => b.gesamtvolumen - a.gesamtvolumen).slice(0, 5)
+          [...suppliers].sort((a, b) => b.gesamtvolumen - a.gesamtvolumen).slice(0, 5)
         );
+        const events = audit.length > 0 ? audit : deriveActivityFromInvoices(inv);
         setActivity(
-          audit.slice(0, 5).map((a) => ({
+          events.slice(0, 5).map((a) => ({
             id: a.id,
             aktion: a.aktion_label || a.aktion,
             details: a.details,

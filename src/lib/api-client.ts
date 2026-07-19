@@ -468,30 +468,76 @@ export function normalizeKpis(raw: unknown): DashboardKpis {
   };
 }
 
-/** Backend: { suppliers: [{ name, count, total, avg, last_date, risk_score, risk_label }] }.
- *  Auf die deutsche Lieferant-Form abbilden (bereits-deutsches Shape wird toleriert). */
-export function normalizeSuppliers(raw: unknown): { items: Lieferant[] } {
+/** Die erste Array-Eigenschaft aus einer Reihe möglicher Wrapper-Keys holen;
+ *  fällt zurück auf das erste Array-Feld überhaupt bzw. auf raw, falls raw
+ *  selbst ein Array ist. So sind wir robust gegen unbekannte Wrapper-Namen. */
+function pickArray(raw: unknown, keys: string[]): unknown[] {
+  if (Array.isArray(raw)) return raw;
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const arr = Array.isArray(o.suppliers)
-    ? o.suppliers
-    : Array.isArray(o.items)
-      ? o.items
-      : Array.isArray(raw)
-        ? (raw as unknown[])
-        : [];
-  const items = arr.map((it): Lieferant => {
-    const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
-    return {
-      name: _str(_pick(r, "name")),
-      anzahl_rechnungen: _num(_pick(r, "anzahl_rechnungen", "count")),
-      gesamtvolumen: _num(_pick(r, "gesamtvolumen", "total")),
-      durchschnitt: _num(_pick(r, "durchschnitt", "avg")),
-      letzte_rechnung: _str(_pick(r, "letzte_rechnung", "last_date")),
-      risiko_score: _num(_pick(r, "risiko_score", "risk_score")),
-      risiko_label: _str(_pick(r, "risiko_label", "risk_label")) || undefined,
-    };
-  });
+  for (const k of keys) {
+    if (Array.isArray(o[k])) return o[k] as unknown[];
+  }
+  // Häufig: unter { data: … } oder { result: … } verschachtelt.
+  for (const wrap of ["data", "result", "results", "payload"]) {
+    const inner = o[wrap];
+    if (Array.isArray(inner)) return inner as unknown[];
+    if (inner && typeof inner === "object") {
+      for (const k of keys) {
+        const v = (inner as Record<string, unknown>)[k];
+        if (Array.isArray(v)) return v as unknown[];
+      }
+    }
+  }
+  // Letzter Ausweg: das erste Array-Feld im Objekt.
+  for (const v of Object.values(o)) if (Array.isArray(v)) return v as unknown[];
+  return [];
+}
+
+/** Backend: { suppliers: [{ name, count, total, avg, last_date, risk_score, risk_label }] }.
+ *  Auf die deutsche Lieferant-Form abbilden. Tolerant gegenüber Wrapper-Key und
+ *  Feldnamen-Varianten (English/Deutsch), da die genaue Backend-Form variiert. */
+export function normalizeSuppliers(raw: unknown): { items: Lieferant[] } {
+  const arr = pickArray(raw, ["suppliers", "lieferanten", "items", "top", "top_suppliers", "vendors"]);
+  const items = arr
+    .map((it): Lieferant => {
+      const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+      return {
+        name: _str(_pick(r, "name", "lieferant", "supplier", "vendor", "rechnungsaussteller", "aussteller", "firma", "company")),
+        anzahl_rechnungen: _num(_pick(r, "anzahl_rechnungen", "count", "anzahl", "invoice_count", "invoices", "rechnungen", "num_invoices")),
+        gesamtvolumen: _num(_pick(r, "gesamtvolumen", "total", "sum", "summe", "volume", "volumen", "total_amount", "betrag_summe", "betrag")),
+        durchschnitt: _num(_pick(r, "durchschnitt", "avg", "average", "mittel", "avg_amount")),
+        letzte_rechnung: _str(_pick(r, "letzte_rechnung", "last_date", "last_invoice", "letztes_datum", "latest", "last")),
+        risiko_score: _num(_pick(r, "risiko_score", "risk_score", "score")),
+        risiko_label: _str(_pick(r, "risiko_label", "risk_label", "risiko", "risk")) || undefined,
+      };
+    })
+    .filter((l) => l.name);
   return { items };
+}
+
+/** Fallback: Top-Lieferanten aus bereits geladenen Rechnungen aggregieren, wenn
+ *  der /lieferanten-Endpoint (noch) nichts liefert. Nutzt ausschließlich echte
+ *  Rechnungsdaten — es wird nichts erfunden. */
+export function deriveSuppliersFromInvoices(items: InvoiceListItem[]): Lieferant[] {
+  const map = new Map<string, { count: number; total: number; last: string }>();
+  for (const inv of items) {
+    const name = (inv?.lieferant || "").trim();
+    if (!name || name === "—") continue;
+    const e = map.get(name) ?? { count: 0, total: 0, last: "" };
+    e.count += 1;
+    e.total += _num(inv.betrag);
+    const d = _str(inv.datum) || _str(inv.created_at);
+    if (d > e.last) e.last = d;
+    map.set(name, e);
+  }
+  return [...map.entries()].map(([name, e]) => ({
+    name,
+    anzahl_rechnungen: e.count,
+    gesamtvolumen: e.total,
+    durchschnitt: e.count ? e.total / e.count : 0,
+    letzte_rechnung: e.last,
+    risiko_score: 0,
+  }));
 }
 
 function summarizeAuditDetails(d: unknown): string {
@@ -511,38 +557,61 @@ function summarizeAuditDetails(d: unknown): string {
  *  Auf AuditEntry abbilden; aktion bleibt der Rohcode, aktion_label ist das Anzeige-Label. */
 export function normalizeAudit(raw: unknown): AuditList {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const arr = Array.isArray(o.items) ? o.items : Array.isArray(raw) ? (raw as unknown[]) : [];
-  const items = arr.map((it): AuditEntry => {
+  const arr = pickArray(raw, ["items", "logs", "entries", "eintraege", "audit", "events", "activities", "aktivitaeten"]);
+  const items = arr.map((it, i): AuditEntry => {
     const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
-    const action = _str(_pick(r, "aktion", "action"));
+    const action = _str(_pick(r, "aktion", "action", "event", "event_type", "typ", "type"));
 
     // details: bestehendes Feld oder details_json (JSON-STRING → parsen).
-    let details = _str(_pick(r, "details"));
-    const dj = r.details_json;
+    let details = _str(_pick(r, "details", "beschreibung", "description", "message", "msg"));
+    const dj = _pick(r, "details_json", "meta", "metadata", "payload", "data");
     if (!details && typeof dj === "string") {
       try {
         details = summarizeAuditDetails(JSON.parse(dj));
       } catch {
-        details = "";
+        details = dj; // kein JSON → als Klartext zeigen
       }
     } else if (!details && dj && typeof dj === "object") {
       details = summarizeAuditDetails(dj);
     }
 
-    const benutzer = _str(_pick(r, "benutzer", "user")) || (r.user_id != null ? `Benutzer #${_str(r.user_id)}` : "");
+    const benutzer =
+      _str(_pick(r, "benutzer", "user", "username", "actor", "user_name")) ||
+      (r.user_id != null ? `Benutzer #${_str(r.user_id)}` : "");
 
     return {
-      id: _num(_pick(r, "id")),
+      id: _num(_pick(r, "id")) || i + 1,
       aktion: action,
       aktion_label: auditActionLabel(action),
       benutzer,
       details,
-      zeitpunkt: _str(_pick(r, "zeitpunkt", "created_at")),
-      entity_type: _str(_pick(r, "entity_type")) || undefined,
-      entity_id: _str(_pick(r, "entity_id")) || undefined,
+      zeitpunkt: _str(_pick(r, "zeitpunkt", "created_at", "timestamp", "time", "datum", "date")),
+      entity_type: _str(_pick(r, "entity_type", "entity", "objekt")) || undefined,
+      entity_id: _str(_pick(r, "entity_id", "object_id", "ref_id")) || undefined,
     };
   });
-  return { items, total: _num(_pick(o, "total")) || items.length };
+  return { items, total: _num(_pick(o, "total", "count")) || items.length };
+}
+
+/** Fallback: „Letzte Aktivität" aus geladenen Rechnungen ableiten, wenn der
+ *  /audit-Endpoint (noch) nichts liefert. Jede Rechnung ist ein echtes
+ *  Upload-Ereignis (created_at) — es wird nichts erfunden. */
+export function deriveActivityFromInvoices(items: InvoiceListItem[]): AuditEntry[] {
+  return items
+    .map((inv, i): AuditEntry => {
+      const zeitpunkt = _str(inv.created_at) || _str(inv.datum);
+      const name = _str(inv.lieferant);
+      return {
+        id: _num(inv.id) || i + 1,
+        aktion: "upload",
+        aktion_label: auditActionLabel("upload"),
+        benutzer: "System",
+        details: name ? `${name}${inv.rechnungsnummer ? ` · ${inv.rechnungsnummer}` : ""}` : "",
+        zeitpunkt,
+      };
+    })
+    .filter((a) => a.zeitpunkt)
+    .sort((a, b) => (a.zeitpunkt < b.zeitpunkt ? 1 : -1));
 }
 
 // ─────────────────────────── API-Methoden ───────────────────────────
