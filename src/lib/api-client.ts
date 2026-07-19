@@ -429,6 +429,40 @@ function normalizeInvoiceList(raw: unknown): InvoiceList {
   };
 }
 
+export function normalizeKpis(raw: unknown): DashboardKpis {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+
+  // trend: Backend liefert [{ date, count }] → auf [{ datum, anzahl }] abbilden.
+  const rawTrend = Array.isArray(o.trend) ? o.trend : [];
+  const trend = rawTrend.map((t) => {
+    const e = (t && typeof t === "object" ? t : {}) as Record<string, unknown>;
+    return { datum: _str(_pick(e, "datum", "date")), anzahl: _num(_pick(e, "anzahl", "count")) };
+  });
+
+  // status_breakdown: rohe Keys (pending/verarbeitet/…) unverändert übernehmen,
+  // Werte zu Zahlen normalisieren.
+  let status_breakdown: Record<string, number> | undefined;
+  const sb = o.status_breakdown;
+  if (sb && typeof sb === "object") {
+    status_breakdown = {};
+    for (const [k, v] of Object.entries(sb as Record<string, unknown>)) status_breakdown[k] = _num(v);
+  }
+
+  const oldest = _pick(o, "aelteste_freigabe_stunden", "oldest_age_hours");
+
+  return {
+    rechnungen_heute: _num(_pick(o, "rechnungen_heute", "count_today")),
+    rechnungen_monat: _num(_pick(o, "rechnungen_monat", "count_month")),
+    rechnungen_quartal: _num(_pick(o, "rechnungen_quartal", "count_quarter")),
+    automatisierungsquote: _num(_pick(o, "automatisierungsquote", "automation_rate")),
+    offene_freigaben: _num(_pick(o, "offene_freigaben", "open_approvals")),
+    aelteste_freigabe_stunden: oldest == null ? null : _num(oldest),
+    anomalie_alerts: _num(_pick(o, "anomalie_alerts", "anomaly_alerts")),
+    trend,
+    status_breakdown,
+  };
+}
+
 // ─────────────────────────── API-Methoden ───────────────────────────
 
 export const flowcheckApi = {
@@ -455,7 +489,8 @@ export const flowcheckApi = {
     }),
 
   // Dashboard
-  kpis: (): Promise<DashboardKpis> => (isDemo() ? Promise.resolve(demo.demoKpis()) : api<DashboardKpis>("/dashboard/kpis")),
+  kpis: (): Promise<DashboardKpis> =>
+    isDemo() ? Promise.resolve(demo.demoKpis()) : api<unknown>("/dashboard/kpis").then(normalizeKpis),
 
   // Rechnungen
   invoices: (params?: string): Promise<InvoiceList> => {

@@ -42,14 +42,14 @@ import {
   ApiError,
   type DashboardKpis,
   type InvoiceListItem,
-  type InvoiceStatus,
   type Lieferant,
 } from "@/lib/api-client";
 import { buildRecommendations, dismissRec } from "@/lib/recommendations";
 import { getPaidSet } from "@/lib/payments";
 import { isDemo } from "@/lib/api-client";
 
-const KPI_CACHE = "flowcheck_kpis_cache";
+// v2: neuer Key, damit alte (fehlgemappte, teils 0-)Caches verworfen werden.
+const KPI_CACHE = "flowcheck_kpis_cache_v2";
 function readKpiCache(): DashboardKpis | null {
   if (typeof window === "undefined") return null;
   try {
@@ -89,12 +89,23 @@ function relativeTime(iso: string, now: number): string {
 }
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  neu: { label: "Neu", color: "#3b82f6" },
+  pending: { label: "Ausstehend", color: "#3b82f6" },
+  neu: { label: "Neu", color: "#0ea5e9" },
   verarbeitet: { label: "Verarbeitet", color: "#f59e0b" },
   freigegeben: { label: "Freigegeben", color: "#059669" },
   exportiert: { label: "Exportiert", color: "#94a3b8" },
+  abgelehnt: { label: "Abgelehnt", color: "#ef4444" },
+  fehler: { label: "Fehler", color: "#b91c1c" },
 };
-const STATUS_ORDER: InvoiceStatus[] = ["neu", "verarbeitet", "freigegeben", "exportiert"];
+// Anzeige-Reihenfolge; zusätzliche/unbekannte Backend-Status werden angehängt.
+const STATUS_ORDER = ["pending", "neu", "verarbeitet", "freigegeben", "exportiert", "abgelehnt", "fehler"];
+
+function statusLabel(s: string) {
+  return STATUS_META[s]?.label ?? s.charAt(0).toUpperCase() + s.slice(1);
+}
+function statusColor(s: string) {
+  return STATUS_META[s]?.color ?? "#94a3b8";
+}
 
 interface ActivityItem {
   id: number;
@@ -281,36 +292,35 @@ export default function DashboardPage() {
     return { last7, up, pct };
   }, [trend]);
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      neu: 0,
-      verarbeitet: 0,
-      freigegeben: 0,
-      exportiert: 0,
-    };
-    // Autoritative Verteilung vom Backend bevorzugen; sonst aus der Liste zählen.
+  const statusCounts = useMemo<Record<string, number>>(() => {
+    // Autoritative Verteilung vom Backend bevorzugen (ALLE Keys übernehmen —
+    // keine Status wegwerfen); sonst aus der Liste zählen.
     const bd = kpis?.status_breakdown;
     if (bd && typeof bd === "object") {
-      for (const key of Object.keys(counts)) {
-        const v = bd[key];
-        if (typeof v === "number" && Number.isFinite(v)) counts[key] = v;
+      const out: Record<string, number> = {};
+      for (const [k, v] of Object.entries(bd)) {
+        if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
       }
-      return counts;
+      return out;
     }
+    const counts: Record<string, number> = {};
     for (const inv of invoices ?? []) {
-      if (inv.status in counts) counts[inv.status] += 1;
+      counts[inv.status] = (counts[inv.status] ?? 0) + 1;
     }
     return counts;
   }, [invoices, kpis]);
 
   const donutData = useMemo(
-    () =>
-      STATUS_ORDER.map((s) => ({
-        status: s,
-        label: STATUS_META[s].label,
-        color: STATUS_META[s].color,
-        count: statusCounts[s],
-      })).filter((d) => d.count > 0),
+    () => {
+      // Bekannte Reihenfolge zuerst, dann evtl. zusätzliche Backend-Status.
+      const keys = [
+        ...STATUS_ORDER.filter((k) => k in statusCounts),
+        ...Object.keys(statusCounts).filter((k) => !STATUS_ORDER.includes(k)),
+      ];
+      return keys
+        .map((s) => ({ status: s, label: statusLabel(s), color: statusColor(s), count: statusCounts[s] ?? 0 }))
+        .filter((d) => d.count > 0);
+    },
     [statusCounts]
   );
   const donutTotal = donutData.reduce((s, d) => s + d.count, 0);
@@ -669,7 +679,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="fc-lift rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-6 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
-          <h2 className="mb-4 text-xl font-semibold text-[#1a1a2e]">Volumen</h2>
+          {/* Der KPIs-Endpoint liefert Rechnungs-ANZAHLEN (count_*), keine €-Summen. */}
+          <h2 className="mb-4 text-xl font-semibold text-[#1a1a2e]">Verarbeitete Rechnungen</h2>
           <dl className="space-y-4">
             {[
               ["Heute", kpis?.rechnungen_heute ?? 0],
@@ -736,21 +747,18 @@ export default function DashboardPage() {
                 </div>
               </div>
               <ul className="mt-4 space-y-1">
-                {STATUS_ORDER.map((s) => (
-                  <li key={s}>
+                {donutData.map((d) => (
+                  <li key={d.status}>
                     <button
                       type="button"
-                      onClick={() => router.push(`/rechnungen?status=${s}`)}
+                      onClick={() => router.push(`/rechnungen?status=${d.status}`)}
                       className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm transition hover:bg-[#faf9f7]"
                     >
                       <span className="flex items-center gap-2 text-[#1a1a2e]">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: STATUS_META[s].color }}
-                        />
-                        {STATUS_META[s].label}
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                        {d.label}
                       </span>
-                      <span className="font-semibold text-[#003856]">{num(statusCounts[s])}</span>
+                      <span className="font-semibold text-[#003856]">{num(d.count)}</span>
                     </button>
                   </li>
                 ))}
