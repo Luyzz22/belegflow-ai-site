@@ -266,7 +266,7 @@ export default function ComplianceCenterPage() {
                   </span>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-[#1a1a2e]">{e.aktion}</p>
+                      <p className="text-sm font-semibold text-[#1a1a2e]">{e.aktion_label || e.aktion}</p>
                       <span className="text-xs text-[#94a3b8]">{dateDE(e.zeitpunkt, true)}</span>
                     </div>
                     {e.details && <p className="text-sm text-[#64748b]">{e.details}</p>}

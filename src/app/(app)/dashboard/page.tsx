@@ -245,7 +245,7 @@ export default function DashboardPage() {
         setActivity(
           audit.slice(0, 5).map((a) => ({
             id: a.id,
-            aktion: a.aktion,
+            aktion: a.aktion_label || a.aktion,
             details: a.details,
             benutzer: a.benutzer,
             rel: relativeTime(a.zeitpunkt, now),
@@ -789,13 +789,31 @@ export default function DashboardPage() {
                     className="group w-full rounded-lg px-2 py-1.5 text-left transition hover:bg-[#faf9f7]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-medium text-[#1a1a2e] group-hover:text-[#003856]">
-                        {l.name}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-sm font-medium text-[#1a1a2e] group-hover:text-[#003856]">
+                          {l.name}
+                        </span>
+                        {l.risiko_label && (
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              l.risiko_score >= 66
+                                ? "bg-red-50 text-red-700"
+                                : l.risiko_score >= 33
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {l.risiko_label}
+                          </span>
+                        )}
                       </span>
                       <span className="shrink-0 text-sm font-semibold text-[#003856]">
                         {eur(l.gesamtvolumen)}
                       </span>
                     </div>
+                    <p className="mt-0.5 text-xs text-[#94a3b8]">
+                      {num(l.anzahl_rechnungen)} {l.anzahl_rechnungen === 1 ? "Rechnung" : "Rechnungen"}
+                    </p>
                     <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#003856]/5">
                       <div
                         className="h-2 rounded-full bg-gradient-to-r from-[#003856] to-[#c8985a] transition-[width] duration-700 ease-out"

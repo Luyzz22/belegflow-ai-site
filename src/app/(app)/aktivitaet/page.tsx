@@ -220,7 +220,7 @@ export default function AktivitaetPage() {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[#1a1a2e]">
-                          <span className="font-semibold">{a.benutzer || "System"}</span> · {a.aktion}
+                          <span className="font-semibold">{a.benutzer || "System"}</span> · {a.aktion_label || a.aktion}
                         </p>
                         {a.details && <p className="text-sm text-[#64748b]">{a.details}</p>}
                         <p className="mt-0.5 text-xs text-[#94a3b8]">{dateDE(a.zeitpunkt, true)} · {relTime(a.zeitpunkt, now)}</p>

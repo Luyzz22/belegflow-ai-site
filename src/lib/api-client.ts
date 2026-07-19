@@ -9,6 +9,7 @@
 // aber eine passende CORS-Konfiguration im Backend nötig).
 
 import * as demo from "@/lib/demo-data";
+import { auditActionLabel } from "@/lib/audit";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/app";
 
@@ -311,6 +312,7 @@ export interface Lieferant {
   durchschnitt: number;
   letzte_rechnung: string;
   risiko_score: number;
+  risiko_label?: string;
 }
 
 export interface LieferantDetail {
@@ -321,10 +323,13 @@ export interface LieferantDetail {
 
 export interface AuditEntry {
   id: number;
-  aktion: string;
+  aktion: string; // Maschinencode (für Keyword-/Icon-Logik)
+  aktion_label?: string; // lesbares deutsches Label (für Anzeige)
   benutzer: string;
   details: string;
   zeitpunkt: string;
+  entity_type?: string;
+  entity_id?: string;
 }
 
 export interface AuditList {
@@ -463,6 +468,83 @@ export function normalizeKpis(raw: unknown): DashboardKpis {
   };
 }
 
+/** Backend: { suppliers: [{ name, count, total, avg, last_date, risk_score, risk_label }] }.
+ *  Auf die deutsche Lieferant-Form abbilden (bereits-deutsches Shape wird toleriert). */
+export function normalizeSuppliers(raw: unknown): { items: Lieferant[] } {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const arr = Array.isArray(o.suppliers)
+    ? o.suppliers
+    : Array.isArray(o.items)
+      ? o.items
+      : Array.isArray(raw)
+        ? (raw as unknown[])
+        : [];
+  const items = arr.map((it): Lieferant => {
+    const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+    return {
+      name: _str(_pick(r, "name")),
+      anzahl_rechnungen: _num(_pick(r, "anzahl_rechnungen", "count")),
+      gesamtvolumen: _num(_pick(r, "gesamtvolumen", "total")),
+      durchschnitt: _num(_pick(r, "durchschnitt", "avg")),
+      letzte_rechnung: _str(_pick(r, "letzte_rechnung", "last_date")),
+      risiko_score: _num(_pick(r, "risiko_score", "risk_score")),
+      risiko_label: _str(_pick(r, "risiko_label", "risk_label")) || undefined,
+    };
+  });
+  return { items };
+}
+
+function summarizeAuditDetails(d: unknown): string {
+  if (typeof d === "string") return d;
+  if (d && typeof d === "object") {
+    const o = d as Record<string, unknown>;
+    if (typeof o.message === "string") return o.message;
+    return Object.entries(o)
+      .slice(0, 3)
+      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`)
+      .join(" · ");
+  }
+  return "";
+}
+
+/** Backend: { items: [{ id, action, entity_type, entity_id, details_json(String), created_at }] }.
+ *  Auf AuditEntry abbilden; aktion bleibt der Rohcode, aktion_label ist das Anzeige-Label. */
+export function normalizeAudit(raw: unknown): AuditList {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const arr = Array.isArray(o.items) ? o.items : Array.isArray(raw) ? (raw as unknown[]) : [];
+  const items = arr.map((it): AuditEntry => {
+    const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+    const action = _str(_pick(r, "aktion", "action"));
+
+    // details: bestehendes Feld oder details_json (JSON-STRING → parsen).
+    let details = _str(_pick(r, "details"));
+    const dj = r.details_json;
+    if (!details && typeof dj === "string") {
+      try {
+        details = summarizeAuditDetails(JSON.parse(dj));
+      } catch {
+        details = "";
+      }
+    } else if (!details && dj && typeof dj === "object") {
+      details = summarizeAuditDetails(dj);
+    }
+
+    const benutzer = _str(_pick(r, "benutzer", "user")) || (r.user_id != null ? `Benutzer #${_str(r.user_id)}` : "");
+
+    return {
+      id: _num(_pick(r, "id")),
+      aktion: action,
+      aktion_label: auditActionLabel(action),
+      benutzer,
+      details,
+      zeitpunkt: _str(_pick(r, "zeitpunkt", "created_at")),
+      entity_type: _str(_pick(r, "entity_type")) || undefined,
+      entity_id: _str(_pick(r, "entity_id")) || undefined,
+    };
+  });
+  return { items, total: _num(_pick(o, "total")) || items.length };
+}
+
 // ─────────────────────────── API-Methoden ───────────────────────────
 
 export const flowcheckApi = {
@@ -558,8 +640,10 @@ export const flowcheckApi = {
       : api<{ ok: boolean }>(`/freigaben/${id}/reject`, { method: "POST", body: JSON.stringify({ grund }) }),
 
   // Lieferanten
-  lieferanten: (): Promise<{ items: Lieferant[] }> =>
-    isDemo() ? Promise.resolve({ items: demo.demoLieferanten() }) : api<{ items: Lieferant[] }>("/lieferanten"),
+  lieferanten: (sort?: string): Promise<{ items: Lieferant[] }> =>
+    isDemo()
+      ? Promise.resolve({ items: demo.demoLieferanten() })
+      : api<unknown>(`/lieferanten${sort ? `?sort=${encodeURIComponent(sort)}` : ""}`).then(normalizeSuppliers),
   lieferant: (name: string): Promise<LieferantDetail> => {
     // Defensiv: ungültiger Name → gar keinen Request feuern (verhindert
     // /lieferanten/undefined und einen unnötigen 404/422).
@@ -584,7 +668,7 @@ export const flowcheckApi = {
       const items = aktion ? all.items.filter((a) => a.aktion.toLowerCase().includes(aktion.toLowerCase())) : all.items;
       return Promise.resolve({ items, total: items.length });
     }
-    return api<AuditList>(`/audit${params ? `?${params}` : ""}`);
+    return api<unknown>(`/audit${params ? `?${params}` : ""}`).then(normalizeAudit);
   },
   auditCsvUrl: () => `${API_BASE}/audit/export.csv`,
 

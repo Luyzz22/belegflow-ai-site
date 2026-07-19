@@ -264,7 +264,7 @@ export default function AuditPage() {
                   </span>
                   <div className="flex-1 rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,56,86,0.06)]">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-[#1a1a2e]">{a.aktion}</p>
+                      <p className="text-sm font-semibold text-[#1a1a2e]">{a.aktion_label || a.aktion}</p>
                       <span className="text-xs text-[#94a3b8]" title={a.zeitpunkt}>
                         {a.rel}
                       </span>
