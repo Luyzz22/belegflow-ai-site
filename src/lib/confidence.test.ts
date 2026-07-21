@@ -81,6 +81,45 @@ describe("computeConfidence — backend validierung is the source of truth", () 
     expect(r.score).toBe(100);
   });
 
+  it("invoice 2025007 (id 52): exactly ONE problem — the Duplikat of invoice 21", () => {
+    const detail = inv({
+      ok: false,
+      error_count: 1,
+      checks: [
+        { name: "§14_rechnungsaussteller", ok: true, severity: "error", message: "Aussteller vorhanden" },
+        { name: "§14_rechnungsnummer", ok: true, severity: "error" },
+        { name: "§14_datum", ok: true, severity: "error" },
+        { name: "§14_betrag_brutto", ok: true, severity: "error" },
+        { name: "§14_steuer_id", ok: true, severity: "error", message: "Steuernummer erkannt" },
+        { name: "§14_umsatzsteuer", ok: true, severity: "error" },
+        { name: "iban", ok: true, severity: "warning", message: "IBAN gültig" },
+        { name: "betrag_summe", ok: true, severity: "warning", message: "Summen stimmig" },
+        { name: "duplikat", ok: false, severity: "error", message: "Identische Rechnung bereits vorhanden (ID 21)" },
+      ],
+    });
+    const r = computeConfidence(detail, { supplierKnown: false, supplierCount: 0 });
+
+    const problems = r.checks.filter((c) => c.status === "fail");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].id).toBe("duplikat");
+    expect(problems[0].detail).toContain("ID 21");
+
+    // Keine fabrizierten IBAN/USt/Kontierung-Probleme.
+    expect(r.checks.some((c) => c.status !== "pass" && /iban/i.test(c.id))).toBe(false);
+    expect(r.checks.some((c) => /ust.?id|ust-id|kontierung/i.test(c.label))).toBe(false);
+    // Passierende Warnungen (iban/betrag_summe) sind KEINE Probleme.
+    expect(r.checks.find((c) => c.id === "iban")!.status).toBe("pass");
+    expect(r.checks.find((c) => c.id === "betrag_summe")!.status).toBe("pass");
+
+    expect(r.tier).toBe("low");
+    const summary = confidenceSummary(r);
+    expect(summary.tone).toBe("error");
+    expect(summary.text).toContain("1 Problem");
+    expect(summary.text.toLowerCase()).toContain("duplik");
+    // Der konkrete Grund (Ursprungs-Rechnung) steht im Banner, nicht nur das Label.
+    expect(summary.text).toContain("ID 21");
+  });
+
   it("falls back to legacy only when there is NO backend validation at all", () => {
     // Demo/Legacy: nur iban_valid/ustid_valid, keine checks/ok → Legacy-Pfad.
     const r = computeConfidence(

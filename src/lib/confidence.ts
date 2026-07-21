@@ -341,8 +341,12 @@ export function confidenceSummary(result: ConfidenceResult): {
   }
   const fails = result.checks.filter((c) => c.status === "fail");
   const n = fails.length;
+  // Konkrete Backend-Meldung mitzeigen (z. B. „Duplikat: Identische Rechnung
+  // bereits vorhanden (ID 21)") — nicht nur das Label, damit der echte Grund
+  // sofort sichtbar ist statt erst im aufgeklappten Breakdown.
+  const parts = fails.map((c) => (c.detail && c.detail !== c.label ? `${c.label}: ${c.detail}` : c.label));
   return {
     tone: "error",
-    text: `${n} ${n === 1 ? "Problem" : "Probleme"}: ${fails.map((c) => c.label).join(", ")}`,
+    text: `${n} ${n === 1 ? "Problem" : "Probleme"}: ${parts.join(" · ")}`,
   };
 }
