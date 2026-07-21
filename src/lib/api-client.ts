@@ -294,15 +294,34 @@ export interface DashboardKpis {
   status_breakdown?: Record<string, number>;
 }
 
+/** Eine offene Freigabe-ANFRAGE. Wichtig: `request_id` ist der Pfad-Parameter
+ *  für /freigaben/{id}/approve — NICHT invoice_id. Live-Shape des Backends:
+ *  { request_id, invoice_id, amount, current_stage, required_role, status,
+ *    escalated, created_at, rechnungsnummer, rechnungsaussteller, age_hours,
+ *    overdue }. Auf UI-freundliche Felder gemappt (betrag/lieferant/erstellt_am). */
 export interface Freigabe {
-  id: number;
+  request_id: number;
   invoice_id: number;
   betrag: number;
   lieferant: string;
   rechnungsnummer?: string;
-  stufe: string;
-  status: string;
+  stufe: string; // Anzeige-Rolle (required_role)
+  current_stage?: number;
+  required_role?: string;
+  status: string; // "offen" | "freigegeben" | "abgelehnt" | …
   erstellt_am: string;
+  age_hours?: number;
+  overdue?: boolean;
+  escalated?: boolean;
+}
+
+/** Antwort von /freigaben/{id}/approve|reject. `final` markiert die letzte Stufe;
+ *  bei mehrstufiger Freigabe rückt `status:"offen"` an die nächste Rolle. */
+export interface ApprovalResult {
+  ok: boolean;
+  status?: string; // "freigegeben" | "offen" | "abgelehnt"
+  final?: boolean;
+  next_role?: string;
 }
 
 export interface Lieferant {
@@ -614,6 +633,60 @@ export function deriveActivityFromInvoices(items: InvoiceListItem[]): AuditEntry
     .sort((a, b) => (a.zeitpunkt < b.zeitpunkt ? 1 : -1));
 }
 
+/** GET /freigaben → { items }. Live-Keys (request_id, amount, current_stage,
+ *  required_role, created_at, rechnungsaussteller, age_hours, overdue) auf die
+ *  kanonische Freigabe-Form abbilden. Nur Einträge mit request_id sind gültig. */
+export function normalizeFreigaben(raw: unknown): { items: Freigabe[] } {
+  const arr = pickArray(raw, ["items", "freigaben", "requests"]);
+  const items = arr
+    .map((it): Freigabe => {
+      const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
+      const role = _str(_pick(r, "required_role", "stufe", "rolle"));
+      const ageRaw = _pick(r, "age_hours");
+      return {
+        request_id: _num(_pick(r, "request_id", "id")),
+        invoice_id: _num(_pick(r, "invoice_id", "invoiceId")),
+        betrag: _num(_pick(r, "amount", "betrag", "betrag_brutto", "brutto", "gesamtbetrag")),
+        lieferant: _str(_pick(r, "rechnungsaussteller", "lieferant", "aussteller", "supplier")),
+        rechnungsnummer: _str(_pick(r, "rechnungsnummer", "rechnungs_nr", "invoice_number")) || undefined,
+        stufe: role,
+        current_stage: _num(_pick(r, "current_stage", "stage")),
+        required_role: role || undefined,
+        status: _str(_pick(r, "status")) || "offen",
+        erstellt_am: _str(_pick(r, "created_at", "erstellt_am")),
+        age_hours: ageRaw == null ? undefined : _num(ageRaw),
+        overdue: _pick(r, "overdue") === true,
+        escalated: Boolean(_num(_pick(r, "escalated"))) || _pick(r, "escalated") === true,
+      };
+    })
+    .filter((f) => f.request_id > 0);
+  return { items };
+}
+
+/** POST-Aktion mit JSON-Body; gibt die geparste Antwort zurück. Bei Fehler wird
+ *  die server-seitige `detail`-Meldung (als String, React #31-sicher) geworfen,
+ *  damit die UI den echten Grund zeigen kann statt still zu reverten. */
+async function postAction(path: string, body: Record<string, unknown>): Promise<ApprovalResult> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body),
+  });
+  const data: Record<string, unknown> = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    const detail = toMessage(data.detail ?? data.error ?? data);
+    throw new ApiError(detail && detail !== "Unbekannter Fehler" ? detail : genericApiMessage(res.status), res.status);
+  }
+  return {
+    ok: data.ok !== false,
+    status: typeof data.status === "string" ? data.status : undefined,
+    final: typeof data.final === "boolean" ? data.final : undefined,
+    next_role: typeof data.next_role === "string" ? data.next_role : undefined,
+  };
+}
+
 // ─────────────────────────── API-Methoden ───────────────────────────
 
 export const flowcheckApi = {
@@ -699,14 +772,18 @@ export const flowcheckApi = {
       })
     ),
 
-  // Freigaben
-  freigaben: (): Promise<{ items: Freigabe[] }> => (isDemo() ? Promise.resolve(demo.demoFreigaben()) : api<{ items: Freigabe[] }>("/freigaben")),
-  approve: (id: number): Promise<{ ok: boolean }> =>
-    isDemo() ? Promise.resolve({ ok: true }) : api<{ ok: boolean }>(`/freigaben/${id}/approve`, { method: "POST" }),
-  reject: (id: number, grund: string): Promise<{ ok: boolean }> =>
+  // Freigaben — die Liste treibt Review & Freigaben (nur Rechnungen MIT offener
+  // Anfrage sind freigebbar). approve/reject IMMER mit request_id (nicht invoice_id).
+  freigaben: (): Promise<{ items: Freigabe[] }> =>
+    isDemo() ? Promise.resolve(demo.demoFreigaben()) : api<unknown>("/freigaben").then(normalizeFreigaben),
+  approve: (requestId: number, comment?: string): Promise<ApprovalResult> =>
     isDemo()
-      ? Promise.resolve({ ok: true })
-      : api<{ ok: boolean }>(`/freigaben/${id}/reject`, { method: "POST", body: JSON.stringify({ grund }) }),
+      ? Promise.resolve({ ok: true, status: "freigegeben", final: true })
+      : postAction(`/freigaben/${requestId}/approve`, comment ? { comment } : {}),
+  reject: (requestId: number, grund?: string): Promise<ApprovalResult> =>
+    isDemo()
+      ? Promise.resolve({ ok: true, status: "abgelehnt", final: true })
+      : postAction(`/freigaben/${requestId}/reject`, grund ? { grund } : {}),
 
   // Lieferanten
   lieferanten: (sort?: string): Promise<{ items: Lieferant[] }> =>

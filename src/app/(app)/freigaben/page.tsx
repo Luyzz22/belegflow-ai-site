@@ -43,6 +43,7 @@ function FreigabeCard({
   };
 
   const ref = f.rechnungsnummer || `RE #${f.invoice_id}`;
+  const ageLabel = f.age_hours != null ? `${Math.round(f.age_hours)} h offen` : null;
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -61,7 +62,9 @@ function FreigabeCard({
         onTouchMove={onMove}
         onTouchEnd={onEnd}
         style={{ transform: `translateX(${dx}px)`, transition: dragging ? "none" : "transform 0.25s ease" }}
-        className="fc-lift rounded-2xl border border-[rgba(0,56,86,0.08)] bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)]"
+        className={`fc-lift rounded-2xl border bg-white p-5 shadow-[0_1px_3px_rgba(0,56,86,0.06)] ${
+          f.overdue ? "border-red-200 ring-1 ring-red-100" : "border-[rgba(0,56,86,0.08)]"
+        }`}
       >
         <div className="flex items-start justify-between gap-3">
           <Link
@@ -70,14 +73,25 @@ function FreigabeCard({
           >
             {f.lieferant || "—"}
           </Link>
-          <span className="shrink-0 rounded-lg bg-[#c8985a]/15 px-2 py-0.5 text-xs font-semibold text-[#8a6526]">
-            Stufe {f.stufe}
-          </span>
+          {f.stufe && (
+            <span className="shrink-0 rounded-lg bg-[#c8985a]/15 px-2 py-0.5 text-xs font-semibold text-[#8a6526]">
+              {f.stufe}
+            </span>
+          )}
         </div>
 
         <p className="mt-3 text-2xl font-bold tabular-nums text-[#003856]">{eur(f.betrag)}</p>
-        <p className="mt-1 text-xs text-[#64748b]">
-          {ref} · {dateDE(f.erstellt_am, true)}
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-[#64748b]">
+          <span>{ref} · {dateDE(f.erstellt_am, true)}</span>
+          {ageLabel && (
+            <span
+              className={`rounded px-1.5 py-0.5 font-semibold ${
+                f.overdue ? "bg-red-50 text-red-700" : "bg-[#003856]/5 text-[#64748b]"
+              }`}
+            >
+              {f.overdue ? "überfällig · " : ""}{ageLabel}
+            </span>
+          )}
         </p>
 
         <div className="mt-4 flex gap-2">
@@ -134,12 +148,25 @@ export default function FreigabenPage() {
   }, [load]);
 
   const approve = (f: Freigabe) => {
-    setActingId(f.id);
+    setActingId(f.request_id);
     flowcheckApi
-      .approve(f.id)
-      .then(() => {
-        setItems((prev) => prev.filter((x) => x.id !== f.id));
-        setToast({ type: "success", text: `Freigabe für ${f.lieferant} genehmigt` });
+      .approve(f.request_id)
+      .then((res) => {
+        // Mehrstufig: status "offen" (final !== true) → an nächste Rolle gerückt,
+        // in der Liste behalten und die Zielrolle aktualisieren.
+        if (res.status === "offen" && res.final !== true) {
+          setItems((prev) =>
+            prev.map((x) =>
+              x.request_id === f.request_id
+                ? { ...x, stufe: res.next_role || x.stufe, required_role: res.next_role || x.required_role }
+                : x
+            )
+          );
+          setToast({ type: "success", text: `Stufe freigegeben — weiter an ${res.next_role || "nächste Stufe"}` });
+        } else {
+          setItems((prev) => prev.filter((x) => x.request_id !== f.request_id));
+          setToast({ type: "success", text: `Freigabe für ${f.lieferant} genehmigt` });
+        }
       })
       .catch((e) => setToast({ type: "error", text: e instanceof ApiError ? e.message : "Aktion fehlgeschlagen" }))
       .finally(() => setActingId(null));
@@ -148,11 +175,11 @@ export default function FreigabenPage() {
   const confirmReject = () => {
     if (!rejectFor) return;
     const f = rejectFor;
-    setActingId(f.id);
+    setActingId(f.request_id);
     flowcheckApi
-      .reject(f.id, grund.trim() || "Kein Grund angegeben")
+      .reject(f.request_id, grund.trim() || undefined)
       .then(() => {
-        setItems((prev) => prev.filter((x) => x.id !== f.id));
+        setItems((prev) => prev.filter((x) => x.request_id !== f.request_id));
         setToast({ type: "success", text: `Freigabe für ${f.lieferant} abgelehnt` });
         setRejectFor(null);
         setGrund("");
@@ -193,9 +220,9 @@ export default function FreigabenPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((f) => (
             <FreigabeCard
-              key={f.id}
+              key={f.request_id}
               f={f}
-              busy={actingId === f.id}
+              busy={actingId === f.request_id}
               onApprove={() => approve(f)}
               onReject={() => setRejectFor(f)}
             />
@@ -232,10 +259,10 @@ export default function FreigabenPage() {
               </button>
               <button
                 onClick={confirmReject}
-                disabled={actingId === rejectFor.id}
+                disabled={actingId === rejectFor.request_id}
                 className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 font-medium text-white transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
               >
-                {actingId === rejectFor.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                {actingId === rejectFor.request_id && <Loader2 className="h-4 w-4 animate-spin" />}
                 Ablehnen
               </button>
             </div>

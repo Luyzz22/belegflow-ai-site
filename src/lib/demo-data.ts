@@ -151,13 +151,13 @@ export function demoFreigaben(): { items: Freigabe[] } {
   const items = demoInvoices()
     .filter((i) => i.status === "verarbeitet")
     .map((i, idx) => ({
-      id: i.id,
+      request_id: i.id,
       invoice_id: i.id,
       betrag: i.betrag,
       lieferant: i.lieferant,
       rechnungsnummer: i.rechnungsnummer,
       stufe: idx % 2 === 0 ? "Sachbearbeiter" : "Teamleiter",
-      status: "ausstehend",
+      status: "offen",
       erstellt_am: i.datum,
     }));
   return { items };

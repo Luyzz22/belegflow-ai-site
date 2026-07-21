@@ -19,8 +19,9 @@ import {
 import {
   flowcheckApi,
   API_BASE,
+  ApiError,
   getToken,
-  type InvoiceListItem,
+  type Freigabe,
   type InvoiceDetail,
 } from "@/lib/api-client";
 import { eur, dateDE, pct } from "@/lib/format";
@@ -44,7 +45,7 @@ export default function ReviewPage() {
   const router = useRouter();
   const { addToast } = useToast();
 
-  const [items, setItems] = useState<InvoiceListItem[]>([]);
+  const [items, setItems] = useState<Freigabe[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [supplierCounts, setSupplierCounts] = useState<Map<string, number>>(new Map());
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -54,6 +55,7 @@ export default function ReviewPage() {
   const [pdf, setPdf] = useState<{ id: number; url: string } | null>(null);
   const [pdfTried, setPdfTried] = useState<number | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [acting, setActing] = useState(false);
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [grund, setGrund] = useState("");
@@ -65,11 +67,12 @@ export default function ReviewPage() {
   const [times, setTimes] = useState<number[]>([]);
   const itemStart = useRef<number>(0);
 
-  // Liste + Lieferanten laden.
+  // Liste aus OFFENEN Freigaben laden — nur diese sind freigebbar (sie haben
+  // eine offene Anfrage mit request_id). NICHT aus /invoices ableiten.
   useEffect(() => {
     flowcheckApi
-      .invoices("status=verarbeitet")
-      .then((r) => setItems((r.items || []).filter((i) => i.status === "verarbeitet")))
+      .freigaben()
+      .then((r) => setItems(r.items || []))
       .catch(() => setItems([]))
       .finally(() => setLoadingList(false));
     flowcheckApi
@@ -83,14 +86,14 @@ export default function ReviewPage() {
   }, []);
 
   const current = items[idx];
-  const currentId = current?.id;
+  const currentId = current?.invoice_id;
 
-  // Detail des aktuellen Belegs laden.
+  // Detail des aktuellen Belegs laden (per invoice_id).
   useEffect(() => {
     if (!current) return;
     let cancelled = false;
     flowcheckApi
-      .invoice(current.id)
+      .invoice(current.invoice_id)
       .then((d) => {
         if (cancelled) return;
         setDetail(d);
@@ -129,7 +132,7 @@ export default function ReviewPage() {
     };
   }, [currentId]);
 
-  const ready = !!detail && !!current && detail.id === current.id;
+  const ready = !!detail && !!current && detail.id === current.invoice_id;
   const confidence = useMemo(() => {
     if (!ready || !detail) return null;
     const count = supplierCounts.get(detail.lieferant) ?? 0;
@@ -160,44 +163,54 @@ export default function ReviewPage() {
   }, []);
 
   const approve = useCallback(() => {
-    if (!ready || !detail) return;
-    const id = detail.id;
-    const label = detail.rechnungsnummer || `#${id}`;
-    // Optimistic UI: sofort weiter, API verzögert im Hintergrund (5 s "Rückgängig").
-    const commit = window.setTimeout(() => {
-      void flowcheckApi.approve(id).catch(() => {
-        addToast({ type: "error", text: `Freigabe für ${label} fehlgeschlagen` });
-      });
-    }, 5000);
-    addToast({
-      type: "success",
-      text: `Rechnung ${label} freigegeben`,
-      undo: { onUndo: () => window.clearTimeout(commit) },
-    });
-    record();
-    advance();
-  }, [ready, detail, addToast, record, advance]);
+    if (!ready || !current || acting) return;
+    const f = current;
+    const label = detail?.rechnungsnummer || `#${f.invoice_id}`;
+    // Antwort abwarten (kein Optimistic-then-revert). approve mit request_id.
+    setActing(true);
+    flowcheckApi
+      .approve(f.request_id)
+      .then((res) => {
+        if (res.status === "offen" && res.final !== true) {
+          // Mehrstufig: Stufe freigegeben, geht an die nächste Rolle.
+          addToast({ type: "success", text: `${label}: Stufe freigegeben — weiter an ${res.next_role || "nächste Stufe"}` });
+        } else {
+          addToast({ type: "success", text: `Rechnung ${label} freigegeben` });
+        }
+        record();
+        advance();
+      })
+      .catch((e) => addToast({ type: "error", text: e instanceof ApiError ? e.message : `Freigabe für ${label} fehlgeschlagen` }))
+      .finally(() => setActing(false));
+  }, [ready, current, detail, acting, addToast, record, advance]);
 
   // Öffnet das (non-blocking) Ablehnen-Modal — kein window.prompt mehr.
   const reject = useCallback(() => {
-    if (!ready || !detail) return;
+    if (!ready || !current) return;
     setGrund("");
     setRejectOpen(true);
-  }, [ready, detail]);
+  }, [ready, current]);
 
   const doReject = useCallback(
     (withGrund: boolean) => {
-      if (!detail) return;
-      const id = detail.id;
-      const reason = withGrund ? grund.trim() || "Kein Grund angegeben" : "Kein Grund angegeben";
-      void flowcheckApi.reject(id, reason).catch(() => {});
-      addToast({ type: "warning", text: `Rechnung ${detail.rechnungsnummer || `#${id}`} abgelehnt` });
-      setRejectOpen(false);
-      setGrund("");
-      record();
-      advance();
+      if (!current || acting) return;
+      const f = current;
+      const label = detail?.rechnungsnummer || `#${f.invoice_id}`;
+      const reason = withGrund ? grund.trim() || undefined : undefined;
+      setActing(true);
+      flowcheckApi
+        .reject(f.request_id, reason)
+        .then(() => {
+          addToast({ type: "warning", text: `Rechnung ${label} abgelehnt` });
+          setRejectOpen(false);
+          setGrund("");
+          record();
+          advance();
+        })
+        .catch((e) => addToast({ type: "error", text: e instanceof ApiError ? e.message : "Ablehnen fehlgeschlagen" }))
+        .finally(() => setActing(false));
     },
-    [detail, grund, addToast, record, advance]
+    [current, detail, grund, acting, addToast, record, advance]
   );
 
   const skip = useCallback(() => {
@@ -268,8 +281,8 @@ export default function ReviewPage() {
       <div className="fc-fade-in">
         <EmptyState
           icon={<CheckCircle2 className="h-6 w-6" />}
-          title="Keine Rechnungen zur Prüfung"
-          description="Es liegen aktuell keine Rechnungen mit Status „verarbeitet“ vor."
+          title="Keine offenen Freigaben"
+          description="Es liegen aktuell keine Rechnungen mit einer offenen Freigabe-Anfrage vor."
           action={
             <Link
               href="/upload"
@@ -357,7 +370,7 @@ export default function ReviewPage() {
       </div>
 
       <div
-        key={current?.id}
+        key={current?.request_id}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -506,7 +519,7 @@ export default function ReviewPage() {
       <div className="sticky bottom-4 mt-6 flex items-center justify-center gap-2 sm:gap-3">
         <button
           onClick={reject}
-          disabled={!ready}
+          disabled={!ready || acting}
           className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-red-600 px-5 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50 sm:px-6"
         >
           <X className="h-5 w-5" />
@@ -525,7 +538,7 @@ export default function ReviewPage() {
         </button>
         <button
           onClick={approve}
-          disabled={!ready}
+          disabled={!ready || acting}
           className="inline-flex min-h-[48px] items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 font-semibold text-white shadow-lg transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50 sm:px-6"
         >
           <Check className="h-5 w-5" />
@@ -583,13 +596,15 @@ export default function ReviewPage() {
               </button>
               <button
                 onClick={() => doReject(false)}
-                className="rounded-xl border border-red-200 px-5 py-2.5 font-medium text-red-600 transition hover:bg-red-50 active:scale-95"
+                disabled={acting}
+                className="rounded-xl border border-red-200 px-5 py-2.5 font-medium text-red-600 transition hover:bg-red-50 active:scale-95 disabled:opacity-50"
               >
                 Ohne Grund ablehnen
               </button>
               <button
                 onClick={() => doReject(true)}
-                className="rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white transition-all hover:bg-red-700 active:scale-95"
+                disabled={acting}
+                className="rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
               >
                 Mit Grund ablehnen
               </button>
