@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi, ApiError, toMessage } from "@/lib/api-client";
+import { notifyDataChanged } from "@/lib/events";
 import { isLimitReached, incrementUsage } from "@/lib/usage";
 import PageHeader from "@/components/PageHeader";
 import UploadCelebration from "@/components/UploadCelebration";
@@ -124,6 +125,7 @@ export default function UploadPage() {
           fail(res.detail || "Verarbeitung fehlgeschlagen");
         } else {
           patch(id, (r) => (r.stepIndex < 3 ? { ...r, stepIndex: 3 } : r));
+          notifyDataChanged(); // Badges (Review/Export) nach Upload neu laden
           finish();
         }
       })

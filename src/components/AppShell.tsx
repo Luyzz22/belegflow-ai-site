@@ -31,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { flowcheckApi } from "@/lib/api-client";
+import { FLOWCHECK_DATA_CHANGED } from "@/lib/events";
 import { getPaidSet } from "@/lib/payments";
 import { zahlungszielFor } from "@/lib/stammdaten";
 import { useAuth } from "@/lib/auth";
@@ -319,14 +320,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [unreadActivity, setUnreadActivity] = useState(false);
   const [exportCount, setExportCount] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
+  // Bump-Zähler: erzwingt ein Neuladen aller Badges nach Upload/Freigabe.
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Badge: Anzahl der zur Prüfung offenen Rechnungen (Status "verarbeitet").
+  // Live halten: auf Daten-Änderungen (Upload, Freigabe erteilt/abgelehnt) hören
+  // und die Badges neu laden — nicht erst bei der nächsten Navigation.
+  useEffect(() => {
+    const onChange = () => setRefreshKey((k) => k + 1);
+    window.addEventListener(FLOWCHECK_DATA_CHANGED, onChange);
+    return () => window.removeEventListener(FLOWCHECK_DATA_CHANGED, onChange);
+  }, []);
+
+  // Badge = Länge der Review-Queue. EINZIGE Quelle: dieselbe /freigaben-Liste,
+  // die auch die Review-Seite lädt — so können Badge und "N von N" nie divergieren.
   useEffect(() => {
     flowcheckApi
-      .invoices("status=verarbeitet")
-      .then((r) => setReviewCount((r.items || []).filter((i) => i.status === "verarbeitet").length))
+      .freigaben()
+      .then((r) => setReviewCount((r.items || []).length))
       .catch(() => setReviewCount(0));
-  }, [pathname]);
+  }, [pathname, refreshKey]);
 
   // Badges: freigegebene (noch nicht exportierte) Rechnungen + überfällige Zahlungen.
   useEffect(() => {
@@ -350,7 +362,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         setExportCount(0);
         setOverdueCount(0);
       });
-  }, [pathname]);
+  }, [pathname, refreshKey]);
 
   // Roter Punkt: ungelesene Aktivitäten (neuestes Audit-Event > zuletzt gesehen).
   useEffect(() => {
@@ -363,7 +375,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         setUnreadActivity(top > seen);
       })
       .catch(() => setUnreadActivity(false));
-  }, [pathname]);
+  }, [pathname, refreshKey]);
 
   // Dynamischer Seitentitel.
   useEffect(() => {

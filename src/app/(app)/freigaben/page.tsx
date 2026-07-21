@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, X, CheckCircle2, Loader2 } from "lucide-react";
 import { flowcheckApi, ApiError, type Freigabe } from "@/lib/api-client";
+import { notifyDataChanged } from "@/lib/events";
 import { eur, dateDE } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import Toast from "@/components/Toast";
@@ -167,6 +168,7 @@ export default function FreigabenPage() {
           setItems((prev) => prev.filter((x) => x.request_id !== f.request_id));
           setToast({ type: "success", text: `Freigabe für ${f.lieferant} genehmigt` });
         }
+        notifyDataChanged(); // Sidebar-Badge live aktualisieren
       })
       .catch((e) => setToast({ type: "error", text: e instanceof ApiError ? e.message : "Aktion fehlgeschlagen" }))
       .finally(() => setActingId(null));
@@ -183,6 +185,7 @@ export default function FreigabenPage() {
         setToast({ type: "success", text: `Freigabe für ${f.lieferant} abgelehnt` });
         setRejectFor(null);
         setGrund("");
+        notifyDataChanged(); // Sidebar-Badge live aktualisieren
       })
       .catch((e) => setToast({ type: "error", text: e instanceof ApiError ? e.message : "Aktion fehlgeschlagen" }))
       .finally(() => setActingId(null));

@@ -24,6 +24,7 @@ import {
   type Freigabe,
   type InvoiceDetail,
 } from "@/lib/api-client";
+import { notifyDataChanged } from "@/lib/events";
 import { eur, dateDE, pct } from "@/lib/format";
 import { computeConfidence, confidenceSummary } from "@/lib/confidence";
 import ConfidenceRing from "@/components/ConfidenceRing";
@@ -177,6 +178,7 @@ export default function ReviewPage() {
         } else {
           addToast({ type: "success", text: `Rechnung ${label} freigegeben` });
         }
+        notifyDataChanged(); // Sidebar-Badge & Co. neu laden
         record();
         advance();
       })
@@ -204,6 +206,7 @@ export default function ReviewPage() {
           addToast({ type: "warning", text: `Rechnung ${label} abgelehnt` });
           setRejectOpen(false);
           setGrund("");
+          notifyDataChanged(); // Sidebar-Badge & Co. neu laden
           record();
           advance();
         })
