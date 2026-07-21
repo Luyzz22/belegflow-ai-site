@@ -245,14 +245,20 @@ export interface ValidationCheck {
   passed?: boolean;
   valid?: boolean;
   status?: string; // "ok" | "pass" | "error" | "fail" | "warning" | …
+  severity?: string; // "error" | "warning" | "info" (Backend)
+  category?: string;
   message?: string;
   text?: string;
 }
 
 export interface Validierung {
-  iban_valid: boolean;
-  ustid_valid: boolean;
-  pflichtangaben: Array<{ feld: string; vorhanden: boolean } | string>;
+  // Legacy/Demo-Felder (optional — echtes Backend liefert `checks` + `ok`).
+  iban_valid?: boolean;
+  ustid_valid?: boolean;
+  pflichtangaben?: Array<{ feld: string; vorhanden: boolean } | string>;
+  // Strukturierte Backend-Validierung (Quelle der Wahrheit).
+  ok?: boolean;
+  error_count?: number;
   checks?: ValidationCheck[];
 }
 

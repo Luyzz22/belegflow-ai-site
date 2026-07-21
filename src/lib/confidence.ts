@@ -1,4 +1,4 @@
-import type { InvoiceDetail } from "@/lib/api-client";
+import type { InvoiceDetail, ValidationCheck } from "@/lib/api-client";
 import { eur } from "@/lib/format";
 
 export type CheckStatus = "pass" | "warn" | "fail";
@@ -44,19 +44,143 @@ function hasDuplicate(detail: InvoiceDetail): boolean {
   });
 }
 
-/**
- * Client-seitiger Konfidenz-Score (0–100) mit nachvollziehbaren Prüfpunkten.
- * `supplierKnown` / `supplierCount` kommen optional aus der Lieferantenliste.
- */
-export function computeConfidence(
-  detail: InvoiceDetail,
-  opts?: {
-    supplierKnown?: boolean;
-    supplierCount?: number;
-    kontierungHistoryCount?: number;
-    duplicate?: { rechnungsnummer: string; datum: string } | null;
+type ConfidenceOpts = {
+  supplierKnown?: boolean;
+  supplierCount?: number;
+  kontierungHistoryCount?: number;
+  duplicate?: { rechnungsnummer: string; datum: string } | null;
+};
+
+// ── Backend-Validierung als Quelle der Wahrheit ──────────────────────
+// Wenn das Backend strukturierte Validierung liefert (validierung.checks
+// bzw. .ok/.error_count), wird AUSSCHLIESSLICH diese gerendert — KEINE
+// clientseitige Neuvalidierung von IBAN/USt/Kontierung.
+
+function prettifyCheckName(name: string): string {
+  return name
+    .replace(/^§?14[_ ]?/i, "§14 ")
+    .replace(/_/g, " ")
+    .replace(/\bidnr\b/i, "IdNr.")
+    .replace(/\bust\b/i, "USt")
+    .replace(/\biban\b/i, "IBAN")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
+function checkPassed(c: ValidationCheck): boolean {
+  if (typeof c.ok === "boolean") return c.ok;
+  if (typeof c.passed === "boolean") return c.passed;
+  if (typeof c.valid === "boolean") return c.valid;
+  if (typeof c.vorhanden === "boolean") return c.vorhanden;
+  if (typeof c.status === "string") {
+    const s = c.status.toLowerCase();
+    if (/(fail|error|fehl|ungültig|ungueltig|invalid)/.test(s)) return false;
+    if (/(ok|pass|valid|gültig|gueltig|bestanden)/.test(s)) return true;
   }
-): ConfidenceResult {
+  return true; // im Zweifel KEIN Fehler erfinden
+}
+
+type Severity = "error" | "warning" | "info";
+function checkSeverity(c: ValidationCheck): Severity {
+  const s = `${c.severity ?? ""} ${c.status ?? ""}`.toLowerCase();
+  if (/(warn|hinweis)/.test(s)) return "warning";
+  if (/(info)/.test(s)) return "info";
+  return "error"; // Default für fehlgeschlagene Checks: blockierend
+}
+
+/** ConfidenceResult strikt aus der strukturierten Backend-Validierung. */
+function fromBackendValidierung(detail: InvoiceDetail): ConfidenceResult {
+  const v = detail.validierung;
+  const raw = (v?.checks ?? []).filter((c): c is ValidationCheck => !!c && typeof c === "object");
+
+  // Kein Check-Array, aber ok/error_count vorhanden → einen Summen-Check bilden,
+  // damit eine fehlerhafte Rechnung nicht fälschlich als 100 % erscheint.
+  if (raw.length === 0) {
+    const errCount = typeof v?.error_count === "number" ? v.error_count : v?.ok === false ? 1 : 0;
+    if (errCount > 0) {
+      return {
+        score: 60,
+        tier: "low",
+        checks: [
+          {
+            id: "validierung",
+            label: "Backend-Validierung",
+            maxPoints: 10,
+            earnedPoints: 0,
+            status: "fail",
+            detail: `${errCount} ${errCount === 1 ? "Prüfung" : "Prüfungen"} nicht bestanden`,
+            hint: "Im Beleg prüfen und korrigieren.",
+          },
+        ],
+      };
+    }
+    // ok === true (oder error_count 0) und keine Detail-Checks → alles in Ordnung.
+    return {
+      score: 100,
+      tier: "high",
+      checks: [
+        {
+          id: "validierung",
+          label: "Backend-Validierung",
+          maxPoints: 10,
+          earnedPoints: 10,
+          status: "pass",
+          detail: "Alle Pflichtprüfungen bestanden",
+        },
+      ],
+    };
+  }
+
+  const checks: ConfidenceCheck[] = raw.map((c, i) => {
+    const passed = checkPassed(c);
+    const severity = passed ? "info" : checkSeverity(c);
+    const status: CheckStatus = passed ? "pass" : severity === "error" ? "fail" : "warn";
+    const label = c.label || prettifyCheckName(c.name || c.feld || c.field || `Prüfung ${i + 1}`);
+    const message =
+      c.message ||
+      c.text ||
+      (passed ? "Geprüft und in Ordnung" : status === "warn" ? "Hinweis — bitte prüfen" : "Prüfung fehlgeschlagen");
+    return {
+      id: c.name || c.feld || c.field || `check_${i}`,
+      label,
+      maxPoints: 10,
+      earnedPoints: status === "pass" ? 10 : status === "warn" ? 5 : 0,
+      status,
+      detail: message,
+      hint: status === "fail" ? "Im Beleg prüfen und korrigieren." : undefined,
+    };
+  });
+
+  const errorFails = checks.filter((c) => c.status === "fail").length;
+  const warnFails = checks.filter((c) => c.status === "warn").length;
+
+  // Score/Tier ausschließlich aus fehlgeschlagenen Checks (Fehler > Warnung).
+  // Eine vollständig valide Rechnung => 100 %, keine Probleme.
+  const tier: ConfidenceResult["tier"] = errorFails > 0 ? "low" : warnFails > 0 ? "medium" : "high";
+  let score = 100 - errorFails * 30 - warnFails * 8;
+  if (tier === "low") score = Math.min(score, 65);
+  else if (tier === "medium") score = Math.max(70, Math.min(score, 92));
+  score = Math.max(0, Math.min(100, score));
+
+  return { score, tier, checks };
+}
+
+/**
+ * Konfidenz-Score (0–100). Bevorzugt IMMER die strukturierte Backend-Validierung
+ * (validierung.checks / .ok / .error_count). Nur wenn diese fehlt (Demo/Legacy)
+ * wird der clientseitige Fallback verwendet.
+ */
+export function computeConfidence(detail: InvoiceDetail, opts?: ConfidenceOpts): ConfidenceResult {
+  const v = detail?.validierung;
+  const hasBackendValidation =
+    !!v && (Array.isArray(v.checks) || typeof v.ok === "boolean" || typeof v.error_count === "number");
+  if (hasBackendValidation) return fromBackendValidierung(detail);
+  return legacyConfidence(detail, opts);
+}
+
+/** Fallback für Demo-/Legacy-Daten ohne strukturierte Backend-Validierung. */
+function legacyConfidence(detail: InvoiceDetail, opts?: ConfidenceOpts): ConfidenceResult {
   const checks: ConfidenceCheck[] = [];
 
   // 1) §14 Pflichtangaben (+20)
