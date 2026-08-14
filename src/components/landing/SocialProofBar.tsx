@@ -1,10 +1,10 @@
 // Bewusst KEINE erfundenen Nutzungszahlen (UWG-Risiko in der Pilotphase),
 // sondern überprüfbare Produktfakten.
 const FACTS = [
-  "EN 16931 · XRechnung & ZUGFeRD",
-  "DATEV-Export (EXTF 700)",
-  "§14 UStG-Prüfung automatisch",
-  "Hosting in Deutschland · DSGVO",
+  "Gemini 2.5 Flash + Claude Sonnet 4",
+  "KoSIT-validiert · EN 16931 · XRechnung 3.0",
+  "DATEV-Export (EXTF 700) · SKR03/04",
+  "🇩🇪 Hosting Deutschland · GoBD 2025 · DSGVO",
 ];
 
 export default function SocialProofBar() {

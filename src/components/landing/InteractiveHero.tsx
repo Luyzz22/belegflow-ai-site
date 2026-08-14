@@ -391,7 +391,7 @@ export default function InteractiveHero() {
               href="/register"
               className="group inline-flex shrink-0 items-center gap-3 border border-white bg-[#f4f5f6] px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#071016] transition-colors hover:bg-[#d8a565] hover:text-[#071016] sm:px-6 sm:py-3.5"
             >
-              Kostenlos testen
+              14 Tage kostenlos — ohne Kreditkarte
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
